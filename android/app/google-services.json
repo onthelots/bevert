@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1014638478313",
+    "project_id": "bevert",
+    "storage_bucket": "bevert.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1014638478313:android:c3ddcd2d892d16afe84178",
+        "android_client_info": {
+          "package_name": "com.example.bevert"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYjR1ag_tfS2JBHK2pXSu0f_jD0Flw-RE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

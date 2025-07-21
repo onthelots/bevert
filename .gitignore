@@ -7,8 +7,6 @@
 .buildlog/
 .history
 
-
-
 # Flutter repo-specific
 /bin/cache/
 /bin/internal/bootstrap.bat
@@ -110,6 +108,9 @@ coverage/
 # Symbols
 app.*.symbols
 
+# Firebase folder
+firebase/
+
 # Exceptions to above rules.
 !**/ios/**/default.mode1v3
 !**/ios/**/default.mode2v3
@@ -117,3 +118,21 @@ app.*.symbols
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
+
+# Firebase configuration files (do not commit sensitive credentials)
+firebase.json
+lib/firebase_options.dart
+
+# Dependency injection locator (may contain environment-specific singletons)
+lib/core/di/locator.dart
+
+# IDEs
+.idea/
+.vscode/
+
+# iOS SwiftPM 패키지 잠금 파일 무시
+ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+ios/Runner.xcworkspace/xcshareddata/swiftpm/
+
+# env
+.env
