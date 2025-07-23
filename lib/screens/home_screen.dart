@@ -29,18 +29,25 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _speechToText = SpeechToText();
     _summaryService = SummaryService();
-    _translationService = TranslationService(); // Initialize the service
+    _translationService = TranslationService();
+
     _initSpeech();
   }
 
   void _initSpeech() async {
-    _speechEnabled = await _speechToText.initialize(onStatus: (status) {
+    _speechEnabled = await _speechToText.initialize(onStatus: (status) async {
       print('Speech status: $status');
+
       if (status == 'notListening') {
-        // Speech recognition stopped, process transcript
-        if (_currentWords.isNotEmpty) {
-          _transcriptSegments.add(_currentWords);
-          _currentWords = '';
+        // STT가 완전히 종료된 시점
+        if (_transcriptSegments.isNotEmpty) {
+          final fullText = _transcriptSegments.join(' ');
+
+          // 한 번만 번역 호출
+          final translated = await _translationService.translate(fullText);
+          setState(() {
+            _translatedText = translated;
+          });
         }
       }
     });
@@ -49,33 +56,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _startListening() async {
     _transcriptSegments.clear();
-    _lastWords = '';
+    _translatedText = '';
     _currentWords = '';
-    _translatedText = ''; // Clear translated text on start
+
     await _speechToText.listen(
-      onResult: (result) async { // Make onResult async
+      onResult: (result) {
         setState(() {
           _currentWords = result.recognizedWords;
-        });
-        // Translate the recognized words
-        final translated = await _translationService.translate(result.recognizedWords);
-        setState(() {
-          _translatedText = translated;
         });
 
         if (result.finalResult) {
           _transcriptSegments.add(result.recognizedWords);
-          _lastWords = result.recognizedWords;
           _currentWords = '';
+          // 번역 호출하지 않음! onStatus에서 처리
         }
       },
-      listenFor: const Duration(minutes: 5), // Listen for up to 5 minutes
-      pauseFor: const Duration(seconds: 3), // Pause if no speech for 3 seconds
-      localeId: 'ko_KR', // Korean locale
+      listenFor: const Duration(minutes: 2),
+      pauseFor: const Duration(seconds: 5),
+      partialResults: true,
+      localeId: 'ko_KR',
+      onSoundLevelChange: null,
     );
+
     setState(() {});
   }
-
   Future<void> _stopListening() async {
     await _speechToText.stop();
     setState(() {});

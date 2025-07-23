@@ -1,8 +1,17 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val keyStoreProperties = Properties()
+val keyStoreFile = rootProject.file("key.properties")
+if (keyStoreFile.exists()) {
+    keyStoreFile.inputStream().use { keyStoreProperties.load(it) }
 }
 
 android {
@@ -13,7 +22,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-
         isCoreLibraryDesugaringEnabled = true
     }
 
@@ -23,10 +31,19 @@ android {
 
     defaultConfig {
         applicationId = "com.example.bevert"
-        minSdk = flutter.minSdkVersion
+        minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file(keyStoreProperties["storeFile"] as String)
+            storePassword = keyStoreProperties["storePassword"] as String
+            keyAlias = keyStoreProperties["keyAlias"] as String
+            keyPassword = keyStoreProperties["keyPassword"] as String
+        }
     }
 
     buildTypes {
@@ -40,6 +57,7 @@ android {
             )
         }
     }
+
 }
 
 flutter {
