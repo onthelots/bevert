@@ -1,4 +1,4 @@
-import 'package:bevert/screens/home_screen.dart';
+import 'package:bevert/presentation/home/home_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -6,14 +6,10 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await dotenv.load(fileName: ".env");
-
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  // printLoadedApiKeys(); // ← 여기 추가
 
   runApp(const BeVertApp());
 }
