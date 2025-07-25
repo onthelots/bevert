@@ -24,11 +24,6 @@ class TranslationService {
     final url = '$_apiUrl?key=$_apiKey';
 
     try {
-      print('[TranslationService] Requesting translation...');
-      print('Target Language: $targetLanguage');
-      print('API Key: ${_apiKey.substring(0, 5)}******');
-      print('Text to Translate: "$text"');
-
       final response = await http.post(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
@@ -37,21 +32,14 @@ class TranslationService {
           'target': targetLanguage,
         }),
       );
-
-      print('[TranslationService] Response Code: ${response.statusCode}');
-      print('[TranslationService] Response Body: ${response.body}');
-
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final translatedText = body['data']['translations'][0]['translatedText'];
-        print('[TranslationService] Translated Text: $translatedText');
         return translatedText;
       } else {
-        print('[TranslationService] API Error: ${response.body}');
         return 'Translation Error';
       }
     } catch (e) {
-      print('[TranslationService] Request failed: $e');
       return 'Translation Error';
     }
   }

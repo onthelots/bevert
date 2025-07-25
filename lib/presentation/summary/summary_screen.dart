@@ -1,5 +1,6 @@
-import 'package:bevert/services/pdf_service.dart';
 import 'package:flutter/material.dart';
+import 'package:bevert/core/services/pdf_service.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:share_plus/share_plus.dart';
 
 class SummaryScreen extends StatelessWidget {
@@ -19,10 +20,10 @@ class SummaryScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('회의록 요약'),
         actions: [
-
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: () async {
+              // PDF 생성 후 공유
               final pdfPath = await _pdfService.createPdf(
                 "Meeting Summary",
                 fullTranscript,
@@ -41,20 +42,6 @@ class SummaryScreen extends StatelessWidget {
               } else if (result.status == ShareResultStatus.dismissed) {
                 print('공유가 취소되었습니다.');
               }
-            },
-          ),
-
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: () {
-              // TODO: Implement a more robust way to get the title
-              final newLog = {
-                "title": "새로운 회의록",
-                "date": "2024년 7월 24일", // Should be dynamic
-                "summary": summary,
-                "transcript": fullTranscript,
-              };
-              Navigator.of(context).pop(newLog);
             },
           ),
         ],
@@ -76,6 +63,7 @@ class SummaryScreen extends StatelessWidget {
             child: Text(fullTranscript),
           ),
           const SizedBox(height: 24.0),
+          // 요약된 회의록
           const Text(
             '요약된 회의록',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -87,7 +75,15 @@ class SummaryScreen extends StatelessWidget {
               color: Colors.grey[850],
               borderRadius: BorderRadius.circular(8.0),
             ),
-            child: Text(summary),
+            child: MarkdownBody(
+              data: summary,
+              styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+                p: const TextStyle(fontSize: 16, color: Colors.white70),
+                h1: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                h2: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                strong: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
           ),
         ],
       ),
