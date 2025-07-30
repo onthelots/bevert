@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyBJKzERb1pUuCDj9FWO02WXVGmC0NG5uXk</string>
+	<string>AIzaSyBBoGbZsOmuAdDtOqV-GPYlv_uElQU3Yn8</string>
 	<key>GCM_SENDER_ID</key>
 	<string>803738796284</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.bevert</string>
+	<string>com.lime.bevert</string>
 	<key>PROJECT_ID</key>
 	<string>bevert-a078d</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:803738796284:ios:9201f09cd70b3c61dc1779</string>
+	<string>1:803738796284:ios:ebc1dd2e8bc227cbdc1779</string>
 </dict>
 </plist>

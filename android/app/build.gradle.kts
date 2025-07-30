@@ -15,7 +15,7 @@ if (keyStoreFile.exists()) {
 }
 
 android {
-    namespace = "com.example.bevert"
+    namespace = "com.lime.bevert"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -30,7 +30,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.bevert"
+        applicationId = "com.lime.bevert"
         minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

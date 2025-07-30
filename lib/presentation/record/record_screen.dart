@@ -1,12 +1,15 @@
 import 'dart:async';
+import 'package:bevert/core/routes/router.dart';
 import 'package:bevert/core/services/summary_service.dart';
 import 'package:bevert/core/services/translation_service.dart';
 import 'package:bevert/data/models/transcript_record/transcript_record_model.dart';
 import 'package:bevert/presentation/home/bloc/transcript_record_bloc/transcript_bloc.dart';
 import 'package:bevert/presentation/home/bloc/transcript_record_bloc/transcript_event.dart';
+import 'package:bevert/presentation/home/bloc/transcript_record_bloc/transcript_state.dart';
 import 'package:bevert/presentation/summary/summary_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:audio_waveforms/audio_waveforms.dart';
@@ -15,7 +18,9 @@ import 'widgets/meeting_info_bottom_sheet.dart';
 import 'widgets/recording_control_bar.dart';
 
 class RecordScreen extends StatefulWidget {
-  const RecordScreen({super.key});
+  final String folderName;
+
+  const RecordScreen({super.key, this.folderName = '기타'});
 
   @override
   State<RecordScreen> createState() => _RecordScreenState();
@@ -180,7 +185,13 @@ class _RecordScreenState extends State<RecordScreen> {
   Widget build(BuildContext context) {
     final displayTranscript = [..._translatedSegments, _currentWords].join(' ');
 
-    return Scaffold(
+    return BlocListener<TranscriptBloc, TranscriptState>(
+      listenWhen: (previous, current) => current is TranscriptSaved,
+      listener: (context, state) {
+        final saved = state as TranscriptSaved;
+        context.go(AppRouter.summary.path, extra: (saved.transcript, true));
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: Text(_title.isNotEmpty ? _title : '회의 녹음'),
       ),
@@ -268,7 +279,8 @@ class _RecordScreenState extends State<RecordScreen> {
           ),
         ],
       ),
-    );
+    ),
+);
   }
 
   // 회의정보 다이어로그
@@ -334,15 +346,12 @@ class _RecordScreenState extends State<RecordScreen> {
     final newRecord = TranscriptRecord(
       id: const Uuid().v4(),
       title: _title.isEmpty ? fallbackTitle : _title,
-      folderName: '기타',
+      folderName: widget.folderName,  // 여기에 widget.folderName 사용
       transcript: fullTranscript,
       summary: summary,
       createdAt: DateTime.now().toUtc(),
     );
+
     context.read<TranscriptBloc>().add(SaveTranscriptEvent(newRecord));
-    final newLog = await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => SummaryScreen(fullTranscript: fullTranscript, summary: summary),
-    ));
-    if (newLog != null) Navigator.of(context).pop(newLog);
   }
 }

@@ -12,6 +12,12 @@ class TranscriptLoaded extends TranscriptState {
   TranscriptLoaded(this.transcripts);
 }
 
+class TranscriptSaved extends TranscriptState {
+  final TranscriptRecord transcript;
+
+  TranscriptSaved(this.transcript);
+}
+
 class TranscriptError extends TranscriptState {
   final String message;
 

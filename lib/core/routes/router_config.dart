@@ -1,5 +1,6 @@
 import 'package:bevert/core/routes/router.dart';
 import 'package:bevert/data/models/transcript_record/transcript_folder_model.dart';
+import 'package:bevert/data/models/transcript_record/transcript_record_model.dart';
 import 'package:bevert/presentation/home/folder_detail_screen.dart';
 import 'package:bevert/presentation/home/home_screen.dart';
 import 'package:bevert/presentation/record/record_screen.dart';
@@ -17,32 +18,42 @@ final GoRouter appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
   observers: [appRouterObserver],
   routes: [
+
+    // 스플래시
     GoRoute(
       path: AppRouter.splash.path,
       name: AppRouter.splash.name,
       builder: (context, state) => const SplashScreen(),
     ),
+
+    // 홈
     GoRoute(
       path: AppRouter.home.path,
       name: AppRouter.home.name,
       builder: (context, state) => const HomeScreen(),
     ),
+
+    // 녹음
     GoRoute(
       path: AppRouter.recording.path,
       name: AppRouter.recording.name,
-      builder: (context, state) => const RecordScreen(),
+      builder: (context, state) {
+        final folderName = state.extra as String;
+        return RecordScreen(folderName: folderName);
+      },
     ),
 
+    // 요약
     GoRoute(
       path: AppRouter.summary.path,
       name: AppRouter.summary.name,
       builder: (context, state) {
-        final (fullTranscript, summary) = state.extra as (String, String);
-        return SummaryScreen(fullTranscript: fullTranscript, summary: summary);
+        final (transcriptRecord, fromRecord) = state.extra as (TranscriptRecord, bool);
+        return SummaryScreen(transcriptRecord: transcriptRecord, fromRecord: fromRecord,);
       },
     ),
 
-    // Folder Detail
+    // 폴더 내 노트 리스트
     GoRoute(
       path: AppRouter.folderDetail.path,
       name: AppRouter.folderDetail.name,

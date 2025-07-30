@@ -20,6 +20,7 @@ class AppAssetIcon {
     return _instance;
   }
 
-  final String icon = 'assets/icon/icon.png';
-  final String icon_circle = 'assets/icon/icon_circle.png';
+  final String icon_original = 'assets/icon/icon_original.png';
+  final String icon_circle_light = 'assets/icon/icon_circle_light.png';
+  final String icon_circle_dark = 'assets/icon/icon_circle_dark.png';
 }

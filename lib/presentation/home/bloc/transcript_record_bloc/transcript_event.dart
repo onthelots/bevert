@@ -14,3 +14,16 @@ class SaveTranscriptEvent extends TranscriptEvent {
 
   SaveTranscriptEvent(this.record);
 }
+
+class DeleteTranscriptEvent extends TranscriptEvent {
+  final String transcriptId;
+
+  DeleteTranscriptEvent(this.transcriptId);
+}
+
+class MoveTranscriptEvent extends TranscriptEvent {
+  final String transcriptId;
+  final String newFolderName;
+
+  MoveTranscriptEvent({required this.transcriptId, required this.newFolderName});
+}
