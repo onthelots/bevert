@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'package:bevert/core/routes/router.dart';
 import 'package:bevert/core/services/summary_service.dart';
-import 'package:bevert/core/services/translation_service.dart';
 import 'package:bevert/data/models/transcript_record/transcript_record_model.dart';
 import 'package:bevert/presentation/home/bloc/transcript_record_bloc/transcript_bloc.dart';
 import 'package:bevert/presentation/home/bloc/transcript_record_bloc/transcript_event.dart';
 import 'package:bevert/presentation/home/bloc/transcript_record_bloc/transcript_state.dart';
-import 'package:bevert/presentation/summary/summary_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -32,6 +30,7 @@ class _RecordScreenState extends State<RecordScreen> {
   bool _isPaused = false;
 
   Timer? _timer;
+  Timer? _silenceTimer;
   int _recordDuration = 0;
   late final RecorderController _recorderController;
 
@@ -41,7 +40,6 @@ class _RecordScreenState extends State<RecordScreen> {
 
   // Services (요약 및 번역)
   late SummaryService _summaryService;
-  late TranslationService _translationService;
 
   // 타이틀 및 맥락
   String _title = '';
@@ -52,7 +50,6 @@ class _RecordScreenState extends State<RecordScreen> {
     super.initState();
     _speechToText = SpeechToText();
     _summaryService = SummaryService();
-    _translationService = TranslationService();
     _recorderController = RecorderController();
     _initSpeech();
 
@@ -61,10 +58,11 @@ class _RecordScreenState extends State<RecordScreen> {
     });
   }
 
-  // 녹음 준비
+  /// 녹음 준비
   void _initSpeech() async {
     await _speechToText.initialize(
       onStatus: (status) async {
+        debugPrint('🟡 Speech status: $status');
         if (status == 'notListening' && _isRecording && !_isPaused) {
           _stopTimer();
           setState(() {
@@ -76,9 +74,10 @@ class _RecordScreenState extends State<RecordScreen> {
         debugPrint('Speech recognition error: $error');
       },
     );
+
   }
 
-  // 녹음시작 버튼 분기처리
+  /// 녹음시작 버튼 분기처리
   void _onMicButtonPressed() {
     if (!_isRecording) {
       _startListening();
@@ -89,16 +88,18 @@ class _RecordScreenState extends State<RecordScreen> {
     }
   }
 
-  // 녹음 시작
+  /// 녹음 시작
   void _startListening() {
     _translatedSegments.clear(); // 기록 초기화
     _currentWords = '';
     _recordDuration = 0;
 
     _speechToText.listen(
-      onResult: _onSpeechResult,  // 인식 결과 콜백 등록
+      onResult: _onSpeechResult, // 인식결과
       listenOptions: SpeechListenOptions(
-        listenMode: ListenMode.dictation,  // 연속 발화 인식 모드
+        listenMode: ListenMode.dictation,
+        partialResults: true,
+        cancelOnError: false,
       ),
       localeId: 'ko_KR', // 한국어 설정
     );
@@ -127,6 +128,8 @@ class _RecordScreenState extends State<RecordScreen> {
       onResult: _onSpeechResult,
       listenOptions: SpeechListenOptions(
         listenMode: ListenMode.dictation,
+        partialResults: true,
+        cancelOnError: false,
       ),
       localeId: 'ko_KR',
     );
@@ -137,28 +140,43 @@ class _RecordScreenState extends State<RecordScreen> {
     });
   }
 
-  // 음성 인식결과에 따른 호출
-  void _onSpeechResult(SpeechRecognitionResult result) async {
+  void _onSpeechResult(SpeechRecognitionResult result) {
+    debugPrint('🎯 Final result? ${result.finalResult}');
+    debugPrint('🎧 Recognized: "${result.recognizedWords}"');
 
-    // finalResult = 사용자가 말한 한 문장이 끝났다고 판단된 시점
-    if (result.finalResult) {
-      // 번역을 실시함
-      final translated = await _translationService.translate(result.recognizedWords);
+    setState(() {
+      if (result.finalResult) {
+        // 최종 결과면 저장
+        _translatedSegments.add(result.recognizedWords.trim() + '\n\n');
+        _currentWords = '';
+        _silenceTimer?.cancel();
+      } else {
+        // partial 결과는 그냥 보여주기만, 저장은 안 함
+        _currentWords = result.recognizedWords;
 
-      // 번역결과
-      setState(() {
-        _translatedSegments.add(translated);
-        _currentWords = ''; // 현재 단어 초기화
-      });
-    } else {
-      // 아직 문장이 끝나지 않았을 때 (실시간 인식 중인 문장)
-      setState(() {
-        _currentWords = result.recognizedWords; // UI에 임시로 보여줌
-      });
-    }
+        // 무음 감지용 타이머 (2초 무음 시 listen 강제 중지)
+        _silenceTimer?.cancel();
+        _silenceTimer = Timer(const Duration(seconds: 2), () async {
+          await _speechToText.stop();
+          // 잠시 딜레이 후 자동 재시작
+          await Future.delayed(const Duration(milliseconds: 200));
+          if (_isRecording && !_isPaused) {
+            await _speechToText.listen(
+              onResult: _onSpeechResult,
+              listenOptions: SpeechListenOptions(
+                listenMode: ListenMode.dictation,
+                partialResults: true,
+                cancelOnError: false,
+              ),
+              localeId: 'ko_KR',
+            );
+          }
+        });
+      }
+    });
   }
 
-  // 녹음 타이머 시작
+  /// 녹음 타이머 시작
   void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -168,7 +186,7 @@ class _RecordScreenState extends State<RecordScreen> {
     });
   }
 
-  // 녹음 타이머 종료
+  /// 녹음 타이머 종료
   void _stopTimer() {
     _timer?.cancel();
   }
@@ -177,13 +195,14 @@ class _RecordScreenState extends State<RecordScreen> {
   void dispose() {
     _speechToText.stop();
     _timer?.cancel();
+    _silenceTimer?.cancel();
     _recorderController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final displayTranscript = [..._translatedSegments, _currentWords].join(' ');
+    final displayTranscript = (_translatedSegments + [_currentWords]).join();
 
     return BlocListener<TranscriptBloc, TranscriptState>(
       listenWhen: (previous, current) => current is TranscriptSaved,
@@ -225,28 +244,26 @@ class _RecordScreenState extends State<RecordScreen> {
                       )
                           : Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: _translatedSegments.join(' '),
-                                style: DefaultTextStyle.of(context).style.copyWith(
-                                  fontSize: 16.0,
-                                  color: Colors.black87,
-                                  height: 1.5,
-                                ),
-                              ),
-                              if (_currentWords.isNotEmpty)
-                                TextSpan(
-                                  text: ' $_currentWords',
-                                  style: DefaultTextStyle.of(context).style.copyWith(
-                                    fontSize: 16.0,
-                                    color: Colors.grey,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                            ],
+                        child: displayTranscript.isEmpty
+                            ? Center(
+                          child: Text(
+                            "녹음버튼을 눌러 시작하세요",
+                            style: TextStyle(fontSize: 16),
+                            textAlign: TextAlign.center,
                           ),
+                        )
+                            : Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            displayTranscript,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.black87,
+                              height: 1.5,
+                            ),
+                            softWrap: true,
+                            textAlign: TextAlign.start,
+                          )
                         ),
                       ),
                     ),
