@@ -209,6 +209,10 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
                     return const Center(child: CircularProgressIndicator());
                   } else if (state is TranscriptLoaded) {
                     final items = state.transcripts;
+
+                    print("노트가 몇개있어요?: ${state.transcripts.length}");
+                    print("Transcripts: ${state.transcripts.map((e) => e.title).toList()}");
+
                     if (items.isEmpty) {
                       return EmptyListPlaceholder(
                         message: '해당 폴더에 저장된 노트가 없어요',
@@ -270,7 +274,7 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
                                                   context.read<TranscriptBloc>()
                                                       .add(
                                                       DeleteTranscriptEvent(
-                                                          transcript.id));
+                                                          transcript.id, transcript.folderName));
                                                   Navigator.of(context).pop(
                                                       true);
                                                 },
@@ -290,16 +294,16 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
                                         borderRadius: BorderRadius.circular(8)),
                                     child: ListTile(
                                       title: Text(transcript.title, maxLines: 1,
-                                          overflow: TextOverflow.ellipsis),
+                                          overflow: TextOverflow.ellipsis, style: theme.textTheme.titleSmall,),
                                       subtitle: Text(
-                                          formatToKST(transcript.createdAt)),
+                                          formatToKST(transcript.createdAt), style: theme.textTheme.labelSmall,),
                                       trailing: const Icon(Icons.chevron_right),
-                                      onTap: () {
-                                        context.push(
-                                          AppRouter.summary.path,
-                                          extra: (transcript, false), // 튜플 형태로 전달
-                                        );
-                                      },
+                                        onTap: () {
+                                          context.push(
+                                            AppRouter.summary.path,
+                                            extra: (transcript, false),
+                                          );
+                                        }
                                     ),
                                   ),
                                 )),

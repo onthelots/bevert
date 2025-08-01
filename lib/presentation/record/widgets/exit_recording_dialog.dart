@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 
-class DeleteFolderDialog extends StatelessWidget {
-  final String folderName;
-  final VoidCallback onConfirmDelete;
+class ExitRecordingDialog extends StatelessWidget {
+  final VoidCallback onConfirm;
 
-  const DeleteFolderDialog({
-    super.key,
-    required this.folderName,
-    required this.onConfirmDelete,
-  });
+  const ExitRecordingDialog({super.key, required this.onConfirm});
 
   @override
   Widget build(BuildContext context) {
@@ -17,14 +12,14 @@ class DeleteFolderDialog extends StatelessWidget {
     return AlertDialog(
       backgroundColor: theme.scaffoldBackgroundColor,
       title: Text(
-        '폴더 삭제',
+        '녹음 종료',
         style: theme.textTheme.titleLarge?.copyWith(
           color: theme.primaryColor,
           fontWeight: FontWeight.bold,
         ),
       ),
       content: Text(
-        '[$folderName] 폴더를 삭제하시겠습니까? 폴더 내 노트도 함께 삭제됩니다.',
+        '현재까지의 녹음이 삭제됩니다. 정말 종료하시겠습니까?',
         style: theme.textTheme.bodyMedium,
       ),
       actions: [
@@ -45,11 +40,11 @@ class DeleteFolderDialog extends StatelessWidget {
               const SizedBox(width: 8),
               TextButton(
                 onPressed: () {
-                  onConfirmDelete();
-                  Navigator.of(context).pop();
+                  Navigator.of(context).pop(); // 다이얼로그 닫기
+                  onConfirm(); // 실제 종료 동작
                 },
                 child: Text(
-                  '삭제',
+                  '종료',
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: Colors.red,
                   ),

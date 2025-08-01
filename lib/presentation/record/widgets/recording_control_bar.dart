@@ -1,9 +1,10 @@
 import 'package:audio_waveforms/audio_waveforms.dart';
+import 'package:bevert/presentation/record/bloc/recording/recording_bloc.dart';
+import 'package:bevert/presentation/record/bloc/recording/recording_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class RecordingControlBar extends StatelessWidget {
-  final bool isPaused;
-  final bool isRecording;
   final int recordDuration;
   final RecorderController controller;
   final VoidCallback onMicTap;
@@ -13,8 +14,6 @@ class RecordingControlBar extends StatelessWidget {
 
   const RecordingControlBar({
     super.key,
-    required this.isPaused,
-    required this.isRecording,
     required this.recordDuration,
     required this.controller,
     required this.onMicTap,
@@ -24,7 +23,7 @@ class RecordingControlBar extends StatelessWidget {
   });
 
   String _formatDuration(int seconds) {
-    final minutes = (seconds / 60).floor().toString().padLeft(2, '0');
+    final minutes = (seconds ~/ 60).toString().padLeft(2, '0');
     final remainingSeconds = (seconds % 60).toString().padLeft(2, '0');
     return '$minutes:$remainingSeconds';
   }
@@ -33,6 +32,11 @@ class RecordingControlBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
+    final status = context.watch<RecordingBloc>().state.status;
+
+    final isRecording = status == RecordingStatus.recording;
+    final isPaused = status == RecordingStatus.paused;
+    final isInitializing = status == RecordingStatus.initializing;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 400),
@@ -53,7 +57,7 @@ class RecordingControlBar extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 녹음/일시정지/재생 버튼 (둥근 원)
+          // 마이크 버튼
           Container(
             width: 64,
             height: 64,
@@ -67,7 +71,7 @@ class RecordingControlBar extends StatelessWidget {
                   color: Colors.black.withOpacity(0.15),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
-                )
+                ),
               ],
             ),
             child: IconButton(
@@ -78,13 +82,12 @@ class RecordingControlBar extends StatelessWidget {
                 color: Colors.white,
                 size: 32,
               ),
-              onPressed: onMicTap,
+              onPressed: isInitializing ? null : onMicTap,
             ),
           ),
 
           const SizedBox(width: 16),
 
-          // 녹음 중이고 일시정지 상태가 아닌 경우: 타이머 + waveform 보여주기
           if (isRecording && !isPaused) ...[
             Expanded(
               child: Column(
@@ -93,19 +96,15 @@ class RecordingControlBar extends StatelessWidget {
                 children: [
                   Text(
                     _formatDuration(recordDuration),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
+                    style: theme.textTheme.titleMedium
                   ),
                   const SizedBox(height: 8),
                   SizedBox(
                     height: 40,
                     child: AudioWaveforms(
                       recorderController: controller,
-                      waveStyle: const WaveStyle(
-                        waveColor: Colors.blue,
+                      waveStyle: WaveStyle(
+                        waveColor: theme.primaryColor,
                         extendWaveform: true,
                         showMiddleLine: false,
                       ),
@@ -116,14 +115,10 @@ class RecordingControlBar extends StatelessWidget {
               ),
             ),
           ] else ...[
-            // 녹음 중이 아니거나 일시정지인 경우: 재생 버튼 + 번역/종료 버튼 가로 정렬
-
-            // 남은 공간에 버튼 3개를 균등 분배시키기 위해 Flexible 사용
             Expanded(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // 번역 버튼
                   ElevatedButton(
                     onPressed: onTranslate,
                     style: ElevatedButton.styleFrom(
@@ -134,8 +129,6 @@ class RecordingControlBar extends StatelessWidget {
                     ),
                     child: const Text('번역', style: TextStyle(fontSize: 16)),
                   ),
-
-                  // 종료 및 문서번역 버튼
                   ElevatedButton(
                     onPressed: translatedSegments.isEmpty ? null : onFinish,
                     style: ElevatedButton.styleFrom(

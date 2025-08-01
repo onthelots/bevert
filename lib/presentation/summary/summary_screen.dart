@@ -39,34 +39,44 @@ class SummaryScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.drive_file_move_outline),
             tooltip: '폴더 이동',
-            onPressed: () async {
-              final folderState = context.read<FolderBloc>().state;
-              if (folderState is! FolderLoaded) return;
+              onPressed: () async {
+                final folderState = context.read<FolderBloc>().state;
+                if (folderState is! FolderLoaded) return;
 
-              final selectedFolder = await showDialog<Folder>(
-                context: context,
-                builder: (context) => SimpleDialog(
-                  title: const Text('이동할 폴더 선택'),
-                  children: folderState.folders.map((folder) {
-                    return SimpleDialogOption(
-                      onPressed: () => Navigator.pop(context, folder),
-                      child: Text(folder.name),
-                    );
-                  }).toList(),
-                ),
-              );
+                // 이동 이전의 폴더 이름 기억
+                final currentFolderName = transcriptRecord.folderName;
 
-              if (selectedFolder != null && selectedFolder.name != transcriptRecord.folderName) {
-                context.read<TranscriptBloc>().add(MoveTranscriptEvent(
-                  transcriptId: transcriptRecord.id,
-                  newFolderName: selectedFolder.name,
-                ));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('노트가 "${selectedFolder.name}" 폴더로 이동되었습니다.')),
+                final selectedFolder = await showDialog<Folder>(
+                  context: context,
+                  builder: (context) => SimpleDialog(
+                    title: const Text('이동할 폴더 선택'),
+                    children: folderState.folders
+                        .where((folder) => folder.name != currentFolderName) // 현재 폴더 제외
+                        .map((folder) {
+                      return SimpleDialogOption(
+                        onPressed: () => Navigator.pop(context, folder),
+                        child: Text(folder.name),
+                      );
+                    }).toList(),
+                  ),
                 );
-                Navigator.pop(context); // 상세 화면 닫기
+
+                // 옮긴 폴더 현재 폴더가 아닐 경우
+                if (selectedFolder != null && selectedFolder.name != currentFolderName) {
+
+                  // 이동 로직 실시
+                  context.read<TranscriptBloc>().add(MoveTranscriptEvent(
+                    transcriptId: transcriptRecord.id,
+                    newFolderName: selectedFolder.name,
+                    currentFolderName: currentFolderName,
+                  ));
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('노트가 "${selectedFolder.name}" 폴더로 이동되었습니다.')),
+                  );
+                  context.pop();
+                }
               }
-            },
           ),
           IconButton(
             icon: const Icon(Icons.delete),
@@ -84,12 +94,12 @@ class SummaryScreen extends StatelessWidget {
                     ),
                     TextButton(
                       onPressed: () {
-                        context.read<TranscriptBloc>().add(DeleteTranscriptEvent(transcriptRecord.id));
+                        context.read<TranscriptBloc>().add(DeleteTranscriptEvent(transcriptRecord.id, transcriptRecord.folderName));
                         Navigator.pop(dialogContext); // 다이얼로그 닫기
-                        Navigator.pop(context); // 상세 화면 닫기
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('노트가 삭제되었습니다.')),
                         );
+                        context.pop();
                       },
                       child: const Text('삭제', style: TextStyle(color: Colors.red)),
                     ),
@@ -118,7 +128,7 @@ class SummaryScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12.0),
             decoration: BoxDecoration(
-              color: Colors.grey[850],
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(8.0),
             ),
             child: Text(transcriptRecord.transcript),
@@ -133,7 +143,7 @@ class SummaryScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12.0),
             decoration: BoxDecoration(
-              color: Colors.grey[850],
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(8.0),
             ),
             child: MarkdownBody(

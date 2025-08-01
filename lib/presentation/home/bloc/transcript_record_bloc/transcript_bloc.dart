@@ -25,6 +25,7 @@ class TranscriptBloc extends Bloc<TranscriptEvent, TranscriptState> {
     try {
       final records = await fetchUseCase(folderName: event.folderName, query: event.query);
       emit(TranscriptLoaded(records));
+      print("LoadTranscriptsEvent 완료. 현재 records 갯수=${records.length}");
     } catch (e) {
       emit(TranscriptError(e.toString()));
     }
@@ -44,7 +45,9 @@ class TranscriptBloc extends Bloc<TranscriptEvent, TranscriptState> {
   Future<void> _onDelete(DeleteTranscriptEvent event, Emitter<TranscriptState> emit) async {
     try {
       await deleteUseCase(event.transcriptId);
-      add(LoadTranscriptsEvent()); // 삭제 후 목록 새로고침
+
+      final updatedRecords = await fetchUseCase(folderName: event.currentFolderName);
+      emit(TranscriptLoaded(updatedRecords));
     } catch (e) {
       emit(TranscriptError('삭제 실패: $e'));
     }
@@ -53,7 +56,9 @@ class TranscriptBloc extends Bloc<TranscriptEvent, TranscriptState> {
   Future<void> _onMove(MoveTranscriptEvent event, Emitter<TranscriptState> emit) async {
     try {
       await moveUseCase(transcriptId: event.transcriptId, newFolderName: event.newFolderName);
-      add(LoadTranscriptsEvent(folderName: event.newFolderName)); // 이동 후 목록 새로고침
+
+      final updatedRecords = await fetchUseCase(folderName: event.currentFolderName);
+      emit(TranscriptLoaded(updatedRecords));
     } catch (e) {
       emit(TranscriptError('폴더 이동 실패: $e'));
     }
