@@ -12,6 +12,9 @@ enum AppRouter {
   // Summary
   summary(path: '/home/summary', name: 'summary', subPath: 'summary'),
 
+  // Calendar
+  calendar(path: '/settings/calendar', name: 'calendar', subPath: 'calendar'),
+
   // Settings (Drawer 대상)
   theme(path: '/settings/theme', name: 'theme', subPath: 'theme'),
   language(path: '/settings/language', name: 'language', subPath: 'language'),

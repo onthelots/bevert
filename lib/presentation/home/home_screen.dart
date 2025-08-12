@@ -1,4 +1,3 @@
-import 'package:bevert/core/components/toast_widget.dart';
 import 'package:bevert/core/constants/app_asset.dart';
 import 'package:bevert/core/constants/constants.dart';
 import 'package:bevert/core/routes/router.dart';
@@ -44,7 +43,11 @@ class HomeScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.info_rounded),
             tooltip: '설정',
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('기능을 준비중입니다 :)')),
+              );
+            },
           ),
         ],
         backgroundColor: theme.cardColor,
@@ -55,6 +58,7 @@ class HomeScreen extends StatelessWidget {
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
+          physics: const ClampingScrollPhysics(),
           children: [
             DrawerHeader(
               decoration: BoxDecoration(
@@ -64,10 +68,11 @@ class HomeScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Image.asset(AppAsset.icon.icon_original, height: 25),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 30),
                   Text("Be heard. Be clear",
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.white,)),
+                  const SizedBox(height: 5),
                   Text("BeVert",
                       style: theme.textTheme.headlineMedium?.copyWith(
                           color: Colors.white, fontWeight: FontWeight.bold)),
@@ -76,29 +81,20 @@ class HomeScreen extends StatelessWidget {
             ),
 
             ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text('전체보기'),
+              leading: const Icon(Icons.calendar_month_outlined),
+              title: Text('날짜별 노트', style: theme.textTheme.bodyLarge),
               onTap: () {
-                Navigator.pop(context); // 닫고
+                context.push(AppRouter.calendar.path);
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('설정'),
-              onTap: () {
-                // TODO: 설정 화면으로 이동
-              },
-            ),
-
             Divider(
               color: theme.dividerColor,
             ),
-
             ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('로그아웃'),
+              leading: const Icon(Icons.tonality),
+              title: Text('테마 설정', style: theme.textTheme.bodyLarge),
               onTap: () {
-                // TODO: 로그아웃 로직 추가
+                context.push(AppRouter.theme.path);
               },
             ),
           ],

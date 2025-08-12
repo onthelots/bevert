@@ -3,7 +3,10 @@ import 'package:bevert/data/models/transcript_record/transcript_folder_model.dar
 import 'package:bevert/data/models/transcript_record/transcript_record_model.dart';
 import 'package:bevert/presentation/home/folder_detail_screen.dart';
 import 'package:bevert/presentation/home/home_screen.dart';
+import 'package:bevert/presentation/notes_by_date/notes_by_date_screen.dart';
 import 'package:bevert/presentation/record/record_screen.dart';
+import 'package:bevert/presentation/settings/language_screen.dart';
+import 'package:bevert/presentation/settings/theme_screen.dart';
 import 'package:bevert/presentation/splash/splash_screen.dart';
 import 'package:bevert/presentation/summary/summary_screen.dart';
 import 'package:flutter/material.dart';
@@ -62,21 +65,34 @@ final GoRouter appRouter = GoRouter(
         return FolderDetailScreen(folder: folder);
       },
     ),
-    // GoRoute(
-    //   path: AppRouter.theme.path,
-    //   name: AppRouter.theme.name,
-    //   builder: (context, state) => const ThemeSettingScreen(),
-    // ),
-    // GoRoute(
-    //   path: AppRouter.language.path,
-    //   name: AppRouter.language.name,
-    //   builder: (context, state) => const LanguageSettingScreen(),
-    // ),
+
+    // 달력에서 노트보기
+    GoRoute(
+      path: AppRouter.calendar.path,
+      name: AppRouter.calendar.name,
+      builder: (context, state) => const NotesByDateScreen(),
+    ),
+
+    // 테마 설정
+    GoRoute(
+      path: AppRouter.theme.path,
+      name: AppRouter.theme.name,
+      builder: (context, state) => const ThemeScreen(),
+    ),
+
+    // 언어 설정
+    GoRoute(
+      path: AppRouter.language.path,
+      name: AppRouter.language.name,
+      builder: (context, state) => const LanguageScreen(),
+    ),
+
     // GoRoute(
     //   path: AppRouter.policy.path,
     //   name: AppRouter.policy.name,
     //   builder: (context, state) => const PolicyScreen(),
     // ),
+
     // GoRoute(
     //   path: AppRouter.about.path,
     //   name: AppRouter.about.name,

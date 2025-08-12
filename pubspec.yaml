@@ -49,6 +49,7 @@ dependencies:
   flutter_speed_dial: ^7.0.0
   toastification: ^3.0.3
   pull_down_button: ^0.10.2
+  table_calendar: ^3.2.0
 
 flutter_native_splash:
   android: true

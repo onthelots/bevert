@@ -49,6 +49,7 @@ class _FolderManagementDialogState extends State<FolderManagementDialog> {
   late final TextEditingController _controller;
   String? _errorText;
   late Color _selectedColor;
+  bool _isColorPickerVisible = false;
 
   @override
   void initState() {
@@ -110,43 +111,57 @@ class _FolderManagementDialogState extends State<FolderManagementDialog> {
             Text(widget.isEditing ? '폴더 수정' : '폴더 생성', style: theme.textTheme.titleLarge?.copyWith(color: theme.primaryColor, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
 
-            // 색상 드롭다운
-            Row(
+            // Color Picker Section
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('색상 선택', style: theme.textTheme.bodyMedium,),
-                const SizedBox(width: 16),
-                GestureDetector(
-                  onTap: () async {
-                    final selected = await showDialog<Color>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        content: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: FolderColors.availableColors.map((color) {
-                            return GestureDetector(
-                              onTap: () => Navigator.of(context).pop(color),
-                              child: CircleAvatar(
-                                backgroundColor: color,
-                                radius: 20,
-                                child: _selectedColor == color
-                                    ? const Icon(Icons.check, color: Colors.white)
-                                    : null,
-                              ),
-                            );
-                          }).toList(),
-                        ),
+                Row(
+                  children: [
+                    Text('색상 선택', style: theme.textTheme.bodyMedium,),
+                    const SizedBox(width: 16),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isColorPickerVisible = !_isColorPickerVisible;
+                        });
+                      },
+                      child: CircleAvatar(
+                        backgroundColor: _selectedColor,
+                        radius: 16,
+                        child: const Icon(Icons.folder, color: Colors.white, size: 14),
                       ),
-                    );
-
-                    if (selected != null) {
-                      setState(() => _selectedColor = selected);
-                    }
-                  },
-                  child: CircleAvatar(
-                    backgroundColor: _selectedColor,
-                    radius: 16,
-                    child: const Icon(Icons.folder, color: Colors.white, size: 14),
+                    ),
+                  ],
+                ),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: Visibility(
+                    visible: _isColorPickerVisible,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 16.0),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: FolderColors.availableColors.map((color) {
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedColor = color;
+                                _isColorPickerVisible = false;
+                              });
+                            },
+                            child: CircleAvatar(
+                              backgroundColor: color,
+                              radius: 20,
+                              child: _selectedColor == color
+                                  ? const Icon(Icons.check, color: Colors.white)
+                                  : null,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
                   ),
                 ),
               ],
