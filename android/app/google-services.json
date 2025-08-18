@@ -7,15 +7,15 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:803738796284:android:a948a94be67bc42adc1779",
+        "mobilesdk_app_id": "1:803738796284:android:98cfa019dbb879e2dc1779",
         "android_client_info": {
-          "package_name": "com.example.bevert"
+          "package_name": "com.lime.bevert"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBHRUMITZ4EK4wXhBEWAeG9PwNzTJHijCo"
+          "current_key": "AIzaSyClgluuTTRPL5ya7jvZtkMgSJi6BQLMb_4"
         }
       ],
       "services": {
