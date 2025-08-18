@@ -87,7 +87,7 @@ class RecordingControlBar extends StatelessWidget {
                   MultiRippleAnimation(
                     size: buttonSize,
                     amplitude: amplitude,
-                    color: theme.focusColor,
+                    color: Colors.redAccent,
                     rippleCount: 3,
                   ),
                 Container(
@@ -96,7 +96,7 @@ class RecordingControlBar extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isRecording && !isPaused
-                        ? theme.focusColor
+                        ? Colors.redAccent
                         : theme.primaryColor,
                     boxShadow: [
                       BoxShadow(

@@ -16,9 +16,8 @@ import 'package:share_plus/share_plus.dart';
 class SummaryScreen extends StatelessWidget {
   final TranscriptRecord transcriptRecord;
   final bool fromRecord;
-  final PdfService _pdfService = PdfService();
 
-  SummaryScreen({
+  const SummaryScreen({
     super.key,
     required this.transcriptRecord,
     this.fromRecord = false,
@@ -27,23 +26,24 @@ class SummaryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(transcriptRecord.title),
-        leading: fromRecord
-            ? null
-            : BackButton(),
-        actions: fromRecord
-            ? null
-            : [
-          IconButton(
-            icon: const Icon(Icons.drive_file_move_outline),
-            tooltip: '폴더 이동',
+
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(transcriptRecord.title, style: theme.textTheme.titleMedium),
+          leading: fromRecord ? null : const BackButton(),
+          actions: fromRecord
+              ? null
+              : [
+            // 폴더 이동
+            IconButton(
+              icon: const Icon(Icons.drive_file_move_outline),
+              tooltip: '폴더 이동',
               onPressed: () async {
                 final folderState = context.read<FolderBloc>().state;
                 if (folderState is! FolderLoaded) return;
 
-                // 이동 이전의 폴더 이름 기억
                 final currentFolderName = transcriptRecord.folderName;
 
                 final selectedFolder = await showDialog<Folder>(
@@ -51,20 +51,16 @@ class SummaryScreen extends StatelessWidget {
                   builder: (context) => SimpleDialog(
                     title: const Text('이동할 폴더 선택'),
                     children: folderState.folders
-                        .where((folder) => folder.name != currentFolderName) // 현재 폴더 제외
-                        .map((folder) {
-                      return SimpleDialogOption(
-                        onPressed: () => Navigator.pop(context, folder),
-                        child: Text(folder.name),
-                      );
-                    }).toList(),
+                        .where((folder) => folder.name != currentFolderName)
+                        .map((folder) => SimpleDialogOption(
+                      onPressed: () => Navigator.pop(context, folder),
+                      child: Text(folder.name),
+                    ))
+                        .toList(),
                   ),
                 );
 
-                // 옮긴 폴더 현재 폴더가 아닐 경우
                 if (selectedFolder != null && selectedFolder.name != currentFolderName) {
-
-                  // 이동 로직 실시
                   context.read<TranscriptBloc>().add(MoveTranscriptEvent(
                     transcriptId: transcriptRecord.id,
                     newFolderName: selectedFolder.name,
@@ -76,116 +72,134 @@ class SummaryScreen extends StatelessWidget {
                   );
                   context.pop();
                 }
-              }
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete),
-            tooltip: '노트 삭제',
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (dialogContext) => AlertDialog(
-                  title: const Text('노트 삭제'),
-                  content: const Text('정말 이 노트를 삭제하시겠습니까?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      child: const Text('취소'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        context.read<TranscriptBloc>().add(DeleteTranscriptEvent(transcriptRecord.id, transcriptRecord.folderName));
-                        Navigator.pop(dialogContext); // 다이얼로그 닫기
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('노트가 삭제되었습니다.')),
-                        );
-                        context.pop();
-                      },
-                      child: const Text('삭제', style: TextStyle(color: Colors.red)),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.share),
-            tooltip: '공유',
-            onPressed: () {
-              // 공유 로직 추가 가능
-            },
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          const Text(
-            '전체 스크립트',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8.0),
-          Container(
-            padding: const EdgeInsets.all(12.0),
-            decoration: BoxDecoration(
-              color: theme.cardColor,
-              borderRadius: BorderRadius.circular(8.0),
-            ),
-            child: Text(transcriptRecord.transcript),
-          ),
-          const SizedBox(height: 24.0),
-          // 요약된 회의록
-          const Text(
-            '요약된 회의록',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8.0),
-          Container(
-            padding: const EdgeInsets.all(12.0),
-            decoration: BoxDecoration(
-              color: theme.cardColor,
-              borderRadius: BorderRadius.circular(8.0),
-            ),
-            child: MarkdownBody(
-              data: transcriptRecord.summary,
-              styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-                p: const TextStyle(fontSize: 16, color: Colors.white70),
-                h1: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-                h2: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-                strong: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: fromRecord
-          ? Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16), // 좌우 + 하단 여백
-        child: SafeArea(
-          minimum: const EdgeInsets.only(bottom: 0),
-          child: SizedBox(
-            width: double.infinity,
-            height: 52, // 버튼 높이 넉넉하게
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.home),
-              label: const Text('홈으로 이동'),
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                backgroundColor: AppColors.lightPrimary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: EdgeInsets.zero,
-              ),
-              onPressed: () {
-                context.go(AppRouter.home.path); // or context.go('/');
               },
             ),
+
+            // 삭제
+            IconButton(
+              icon: const Icon(Icons.delete),
+              tooltip: '노트 삭제',
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (dialogContext) => AlertDialog(
+                    title: const Text('노트 삭제'),
+                    content: const Text('정말 이 노트를 삭제하시겠습니까?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: const Text('취소'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          context.read<TranscriptBloc>().add(
+                              DeleteTranscriptEvent(transcriptRecord.id, transcriptRecord.folderName));
+                          Navigator.pop(dialogContext);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('노트가 삭제되었습니다.')),
+                          );
+                          context.pop();
+                        },
+                        child: const Text('삭제', style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            // 공유
+            IconButton(
+              icon: const Icon(Icons.share),
+              tooltip: '공유',
+              onPressed: () {
+                // 공유 로직 추가 가능
+              },
+            ),
+          ],
+
+          bottom: TabBar(
+            dividerColor: Colors.transparent,
+            indicatorColor: theme.primaryColor,
+            tabs: const [
+              Tab(text: 'AI 문서'),
+              Tab(text: '전체 스크립트'),
+            ],
           ),
         ),
-      )
-          : null,
+
+        body: TabBarView(
+          children: [
+            // Tab1. AI 문서
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                child: Container(
+                  padding: const EdgeInsets.all(12.0),
+                  decoration: BoxDecoration(
+                    color: theme.cardColor,
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  child: MarkdownBody(
+                    data: transcriptRecord.summary,
+                    styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                      p: theme.textTheme.bodySmall,
+                      h1: theme.textTheme.titleLarge,
+                      h2: theme.textTheme.titleMedium,
+                      strong: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // Tab2. 전체 스크립트
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                child: Container(
+                  padding: const EdgeInsets.all(12.0),
+                  decoration: BoxDecoration(
+                    color: theme.cardColor,
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  child: Text(
+                    transcriptRecord.transcript,
+                    style: const TextStyle(fontSize: 16, color: Colors.white70),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        bottomNavigationBar: fromRecord
+            ? Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SafeArea(
+            minimum: const EdgeInsets.only(bottom: 30),
+            child: SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.home),
+                label: const Text('홈으로 이동'),
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  backgroundColor: AppColors.lightPrimary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: EdgeInsets.zero,
+                ),
+                onPressed: () => context.go(AppRouter.home.path),
+              ),
+            ),
+          ),
+        )
+            : null,
+      ),
     );
   }
 }

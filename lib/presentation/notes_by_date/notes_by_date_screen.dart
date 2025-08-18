@@ -147,18 +147,18 @@ class _NotesByDateScreenState extends State<NotesByDateScreen> {
                   calendarStyle: CalendarStyle(
                     // Marker for events
                     markerDecoration: BoxDecoration(
-                      color: theme.colorScheme.primary,
+                      color: theme.focusColor,
                       shape: BoxShape.circle,
                     ),
                     // Today's date style
                     todayDecoration: BoxDecoration(
-                      color: theme.colorScheme.secondary.withOpacity(0.5),
+                      color: theme.colorScheme.secondary.withOpacity(0.2),
                       shape: BoxShape.circle,
                     ),
                     todayTextStyle: TextStyle(color: theme.colorScheme.onSecondary),
                     // Selected date style
                     selectedDecoration: BoxDecoration(
-                      color: theme.colorScheme.primary,
+                      color: theme.colorScheme.primary.withOpacity(0.8),
                       shape: BoxShape.circle,
                     ),
                     selectedTextStyle: TextStyle(color: theme.colorScheme.onPrimary),
@@ -194,7 +194,7 @@ class _NotesByDateScreenState extends State<NotesByDateScreen> {
                                 borderRadius: BorderRadius.circular(12.0),
                               ),
                               child: ListTile(
-                                title: Text(record.title),
+                                title: Text(record.title, style: theme.textTheme.titleSmall),
                                 subtitle: Text(
                                   DateFormat('yyyy-MM-dd HH:mm').format(record.createdAt),
                                   style: theme.textTheme.bodySmall,

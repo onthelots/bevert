@@ -7,11 +7,22 @@ class SummaryService {
   Future<String> summarize(String transcript, {String? context}) async {
     try {
       final contextLine = (context != null && context.isNotEmpty)
-          ? '회의 주제는 다음과 같습니다:\n"$context"\n\n'
+          ? '회의 주제: "$context"\n\n'
           : '';
 
       final prompt = '''
-${contextLine}다음 회의 스크립트를 핵심 주제, 결정 사항, 실행 항목(Action Items)으로 구분하여 전문적인 회의록 형태로 요약해줘:\n\n$transcript
+${contextLine}다음 회의 내용을 전문적인 회의록 형태로 작성해주세요. 회의록에는 다음 항목이 포함되어야 합니다:
+
+- 회의 제목
+- 회의 일시
+- 참석자
+- 안건 및 논의 내용
+- 결정 사항
+
+회의 스크립트:
+$transcript
+
+각 항목을 명확히 구분하고, 간결하고 공식적인 문서 스타일로 작성해주세요.
 ''';
 
       final content = [Content.text(prompt)];
@@ -24,3 +35,4 @@ ${contextLine}다음 회의 스크립트를 핵심 주제, 결정 사항, 실행
     }
   }
 }
+

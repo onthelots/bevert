@@ -1,70 +1,62 @@
-import 'dart:convert';
 import 'dart:typed_data';
-import 'package:bevert/data/models/stt_remote/stt_model.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http_parser/http_parser.dart';
 
-class SttRemoteDataSource {
-  final String baseUrl = "http://epretx.etri.re.kr:8000/api/WiseASR_Recognition";
-  final String accessKey;
+abstract class WhisperDataSource {
+  Future<String> transcribeAudio(Uint8List audioData);
+}
+
+class WhisperDataSourceImpl implements WhisperDataSource {
   final Dio dio;
 
-  SttRemoteDataSource(this.accessKey, {Dio? dio}) : dio = dio ?? Dio();
+  WhisperDataSourceImpl(this.dio);
 
-  Future<SttResponse> recognize(Uint8List audioChunk, String languageCode) async {
+  @override
+  Future<String> transcribeAudio(Uint8List audioData) async {
+    final apiKey = dotenv.env['OPENAI_API_KEY']!;
+    final filename = 'audio_${DateTime.now().millisecondsSinceEpoch}.wav';
+
+    print("🔹 Whisper 호출 준비");
+    print("🔹 파일 크기: ${audioData.length} bytes");
+    print("🔹 파일 이름: $filename");
+    print("🔹 API Key 존재 여부: ${apiKey.isNotEmpty}");
+
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(audioData, filename: filename),
+      'model': 'whisper-1',
+    });
+
     try {
-      final audioBase64 = base64Encode(audioChunk);
-
-      final requestJson = {
-        "argument": {
-          "language_code": languageCode,
-          "audio": audioBase64,
-        }
-      };
-
       final response = await dio.post(
-        baseUrl,
+        'https://api.openai.com/v1/audio/transcriptions',
+        data: formData,
         options: Options(
           headers: {
-            "Content-Type": "application/json; charset=UTF-8",
-            "Authorization": accessKey,
+            'Authorization': 'Bearer $apiKey',
+            // multipart/form-data는 FormData 사용 시 자동 지정됨
+            //'Content-Type': 'multipart/form-data',
+          },
+          validateStatus: (status) {
+            // 200번대뿐만 아니라 모든 상태코드 확인
+            return true;
           },
         ),
-        data: jsonEncode(requestJson),
       );
 
-      // 🔹 전체 응답 타입과 내용
-      debugPrint("🔊 [STT raw response] type=${response.data.runtimeType}, data=${response.data}");
+      print("🔹 HTTP 상태 코드: ${response.statusCode}");
+      print("🔹 Response data: ${response.data}");
 
       if (response.statusCode == 200) {
-        Map<String, dynamic> jsonData;
-
-        if (response.data is Map<String, dynamic>) {
-          jsonData = response.data;
-        } else if (response.data is String) {
-          jsonData = jsonDecode(response.data);
-        } else {
-          throw Exception("Unexpected response format: ${response.data.runtimeType}");
-        }
-
-        // 🔹 인식된 텍스트 추출
-        final recognizedText = jsonData['return_object']?['recognized'] ?? "[인식 실패]";
-        debugPrint("📝 [STT recognized text] $recognizedText");
-
-        // STT 모델로 변환
-        final sttResponse = SttResponse.fromJson(jsonData);
-
-        // 🔹 모델 변환 결과 확인
-        debugPrint("✅ [STT parsed response] $sttResponse");
-
-        return sttResponse;
+        return response.data['text'] ?? '';
       } else {
-        throw Exception("STT API failed: ${response.statusCode}");
+        throw Exception('Whisper API error: ${response.statusCode} - ${response.data}');
       }
-    } catch (e, stack) {
-      debugPrint("❌ STT API error: $e");
-      debugPrint("$stack");
-      throw Exception("STT API error: $e");
+    } catch (e, st) {
+      print("❌ Whisper 호출 예외 발생: $e");
+      print(st);
+      rethrow;
     }
   }
 }
