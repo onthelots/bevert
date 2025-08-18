@@ -3,9 +3,13 @@
 # BEVERT
 > Be heard. Be clear. BeVERT
 - 목소리를 또렷하게, 회의 내용을 빠짐없이. AI가 음성을 분석하고 자동으로 회의록까지 만들어주는 서비스
+  
+<img width="7275" height="2556" alt="store_screenshot" src="https://github.com/user-attachments/assets/efc2886e-0618-4427-ac54-aa0d44c652a3" />
 
-<br> 
 
+<br>
+
+--- 
 ⚠️ **참고사항**
 - 이 앱은 **비공개 프로젝트**이며, 제한된 사용자만 사용할 수 있습니다.  
 - 스토어 배포 계획이 없으며, 오픈소스가 아닙니다.  
