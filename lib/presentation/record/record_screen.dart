@@ -1,249 +1,118 @@
 import 'dart:async';
-import 'package:bevert/presentation/summary/summary_screen.dart';
-import 'package:bevert/services/summary_service.dart';
-import 'package:bevert/services/translation_service.dart';
+import 'package:bevert/core/di/locator.dart';
+import 'package:bevert/core/routes/router.dart';
+import 'package:bevert/core/services/helper/format_duration.dart';
+import 'package:bevert/core/services/summary_service.dart';
+import 'package:bevert/data/models/transcript_record/transcript_record_model.dart';
+import 'package:bevert/presentation/home/bloc/transcript_record_bloc/transcript_bloc.dart';
+import 'package:bevert/presentation/home/bloc/transcript_record_bloc/transcript_event.dart';
+import 'package:bevert/presentation/home/bloc/transcript_record_bloc/transcript_state.dart';
+import 'package:bevert/presentation/record/bloc/recording/recording_bloc.dart';
+import 'package:bevert/presentation/record/bloc/recording/recording_event.dart';
+import 'package:bevert/presentation/record/bloc/recording/recording_state.dart';
 import 'package:flutter/material.dart';
-import 'package:speech_to_text/speech_to_text.dart';
-import 'package:speech_to_text/speech_recognition_result.dart';
-import 'package:audio_waveforms/audio_waveforms.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:uuid/uuid.dart' show Uuid;
+import 'widgets/exit_recording_dialog.dart';
+import 'widgets/meeting_info_bottom_sheet.dart';
+import 'widgets/recoding_loading_overlay.dart';
+import 'widgets/recording_control_bar.dart';
 
-class RecordScreen extends StatefulWidget {
-  const RecordScreen({super.key});
+class RecordScreen extends StatelessWidget {
+  final String folderName;
+
+  const RecordScreen({super.key, this.folderName = '기타'});
 
   @override
-  State<RecordScreen> createState() => _RecordScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => locator<RecordingBloc>(), // DI 활용
+      child: _RecordScreenView(folderName: folderName),
+    );
+  }
 }
 
-class _RecordScreenState extends State<RecordScreen> {
-  late SpeechToText _speechToText;
-  bool _isRecording = false;
-  bool _isPaused = false;
-  String _currentWords = '';
-  final List<String> _translatedSegments = [];
+class _RecordScreenView extends StatefulWidget {
+  final String folderName;
 
-  late SummaryService _summaryService;
-  late TranslationService _translationService;
+  const _RecordScreenView({required this.folderName});
 
-  Timer? _timer;
-  int _recordDuration = 0;
+  @override
+  State<_RecordScreenView> createState() => _RecordScreenViewState();
+}
 
-  late final RecorderController _recorderController;
+class _RecordScreenViewState extends State<_RecordScreenView> with WidgetsBindingObserver {
+  bool _hasShownMeetingInfo = false;
 
   @override
   void initState() {
     super.initState();
-    _speechToText = SpeechToText();
-    _summaryService = SummaryService();
-    _translationService = TranslationService();
-    _recorderController = RecorderController();
-    _initSpeech();
-  }
-
-  void _initSpeech() async {
-    await _speechToText.initialize(
-      onStatus: (status) async {
-        if (status == 'notListening' && _isRecording && !_isPaused) {
-          _stopTimer();
-          setState(() {
-            _isRecording = false;
-          });
-        }
-      },
-      onError: (error) {
-        debugPrint('Speech recognition error: $error');
-      },
-    );
-  }
-
-  void _onMicButtonPressed() {
-    if (!_isRecording) {
-      _startListening();
-    } else if (_isRecording && !_isPaused) {
-      _pauseListening();
-    } else if (_isRecording && _isPaused) {
-      _resumeListening();
-    }
-  }
-
-  void _startListening() {
-    _translatedSegments.clear();
-    _currentWords = '';
-    _recordDuration = 0;
-
-    _speechToText.listen(
-      onResult: _onSpeechResult,
-      listenOptions: SpeechListenOptions(
-        listenMode: ListenMode.dictation,
-      ),
-      localeId: 'ko_KR',
-    );
-
-    _recorderController.record();
-    _startTimer();
-    setState(() {
-      _isRecording = true;
-      _isPaused = false;
-    });
-  }
-
-  void _pauseListening() {
-    _speechToText.stop();
-    _recorderController.pause();
-    _stopTimer();
-    setState(() {
-      _isPaused = true;
-    });
-  }
-
-  void _resumeListening() {
-    _speechToText.listen(
-      onResult: _onSpeechResult,
-      listenOptions: SpeechListenOptions(
-        listenMode: ListenMode.dictation,
-      ),
-      localeId: 'ko_KR',
-    );
-    _recorderController.record();
-    _startTimer();
-    setState(() {
-      _isPaused = false;
-    });
-  }
-
-  void _onSpeechResult(SpeechRecognitionResult result) async {
-    if (result.finalResult) {
-      final translated = await _translationService.translate(result.recognizedWords);
-      setState(() {
-        _translatedSegments.add(translated);
-        _currentWords = '';
-      });
-    } else {
-      setState(() {
-        _currentWords = result.recognizedWords;
-      });
-    }
-  }
-
-  void _startTimer() {
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        _recordDuration++;
-      });
-    });
-  }
-
-  void _stopTimer() {
-    _timer?.cancel();
-  }
-
-  String _formatDuration(int seconds) {
-    final minutes = (seconds / 60).floor().toString().padLeft(2, '0');
-    final remainingSeconds = (seconds % 60).toString().padLeft(2, '0');
-    return '$minutes:$remainingSeconds';
+    WidgetsBinding.instance.addObserver(this); // 옵저버 등록
+    // context.read<RecordingBloc>()..
   }
 
   @override
   void dispose() {
-    _speechToText.stop();
-    _timer?.cancel();
-    _recorderController.dispose();
+    WidgetsBinding.instance.removeObserver(this); // 옵저버 제거
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
-    final displayTranscript = [..._translatedSegments, _currentWords].join(' ');
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final bloc = context.read<RecordingBloc>();
+    final status = bloc.state.status;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('회의 녹음'),
+    if (state == AppLifecycleState.paused) {
+      debugPrint("앱이 백그라운드로 갔지만 녹음은 유지합니다.");
+    } else if (state == AppLifecycleState.resumed) {
+      debugPrint("앱이 다시 포그라운드로 돌아왔습니다.");
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final state = context.read<RecordingBloc>().state;
+
+    if (!_hasShownMeetingInfo && state.status == RecordingStatus.idle) {
+      _hasShownMeetingInfo = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showMeetingInfoDialog(context);
+      });
+    }
+  }
+
+  // 회의 개요 입력 모달
+  void _showMeetingInfoDialog(BuildContext context) {
+    final bloc = context.read<RecordingBloc>();
+    final state = bloc.state;
+
+    showModalBottomSheet(
+      enableDrag: true,
+      showDragHandle: true,
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme
+          .of(context)
+          .scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            AudioWaveforms(
-              size: Size(MediaQuery.of(context).size.width, 50),
-              recorderController: _recorderController,
-              waveStyle: const WaveStyle(
-                waveColor: Colors.blue,
-                extendWaveform: true,
-                showMiddleLine: false,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                child: SingleChildScrollView(
-                  reverse: true,
-                  child: Text(
-                    displayTranscript.isEmpty
-                        ? '녹음 버튼을 눌러 시작하세요...'
-                        : displayTranscript,
-                    style: const TextStyle(fontSize: 18.0),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              _formatDuration(_recordDuration),
-              style: const TextStyle(fontSize: 24.0),
-            ),
-            FloatingActionButton(
-              onPressed: _onMicButtonPressed,
-              child: Icon(
-                !_isRecording
-                    ? Icons.mic
-                    : (_isPaused ? Icons.play_arrow : Icons.pause),
-              ),
-            ),
-            TextButton(
-              onPressed: () async {
-                _pauseListening();
-                final fullTranscript = displayTranscript;
-                if (fullTranscript.trim().isEmpty) return;
-
-                _showLoadingDialog();
-                final summary = await _summaryService.summarize(fullTranscript);
-                Navigator.of(context).pop();
-
-                final newLog = await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => SummaryScreen(
-                      fullTranscript: fullTranscript,
-                      summary: summary,
-                    ),
-                  ),
-                );
-
-                if (newLog != null) {
-                  Navigator.of(context).pop(newLog);
-                }
-              },
-              child: const Text('종료'),
-            ),
-          ],
-        ),
-      ),
+      builder: (modalContext) {
+        return MeetingInfoBottomSheet(
+          initialTitle: state.title,
+          initialContext: state.meetingContext,
+          onSave: (title, contextText) {
+            bloc.add(UpdateMeetingInfo(title, contextText));
+          },
+        );
+      },
     );
   }
 
-  void _showLoadingDialog() {
+  // 로딩 다이어로그
+  void _showLoadingDialog(BuildContext context) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -258,6 +127,169 @@ class _RecordScreenState extends State<RecordScreen> {
                 SizedBox(width: 20),
                 Text("회의록을 요약하는 중..."),
               ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _onFinishAndTranslate(BuildContext context, RecordingState state,
+      SummaryService summaryService, String title,
+      String meetingContext) async {
+    context.read<RecordingBloc>().add(StopRecording());
+
+    final fullTranscript = state.segments.join(' ').trim();
+    if (fullTranscript.isEmpty) return;
+
+    _showLoadingDialog(context);
+
+    final summary = await summaryService.summarize(
+        fullTranscript, context: meetingContext);
+    Navigator.of(context).pop();
+
+    final now = DateTime.now().toLocal();
+    final fallbackTitle = '제목없음_${now.toString().substring(0, 16)}';
+
+    final newRecord = TranscriptRecord(
+      id: const Uuid().v4(),
+      title: title.isEmpty ? fallbackTitle : title,
+      folderName: widget.folderName,
+      transcript: fullTranscript,
+      summary: summary,
+      createdAt: DateTime.now().toUtc(),
+    );
+
+    context.read<TranscriptBloc>().add(
+        SaveTranscriptEvent(newRecord));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final summaryService = SummaryService();
+    final theme = Theme.of(context);
+
+    final status = context.watch<RecordingBloc>().state.status;
+    final bool showLoadingIndicator =
+        status == RecordingStatus.initializing || status == RecordingStatus.resuming;
+
+    return BlocBuilder<RecordingBloc, RecordingState>(
+      builder: (context, state) {
+        final displayTranscript = state.segments.join('\n');
+
+        return BlocListener<TranscriptBloc, TranscriptState>(
+          listenWhen: (previous, current) => current is TranscriptSaved,
+          listener: (context, state) {
+            final saved = state as TranscriptSaved;
+            context.go(AppRouter.summary.path, extra: (saved.transcript, true));
+          },
+          child: PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, result) {
+              if (didPop) return;
+
+              // 스크립트가 비어있을 경우
+              if (displayTranscript.isEmpty) {
+                context.pop();
+
+                // 스크립트가 존재할 경우 -> Dialog 생성
+              } else {
+                final bloc = context.read<RecordingBloc>();
+                bloc.add(PauseRecording());
+                showDialog(
+                  context: context,
+                  builder: (dialogContext) =>
+                      ExitRecordingDialog(
+                        onConfirm: () {
+                          bloc.add(StopRecording());
+                          context.pop();
+                        },
+                      ),
+                );
+              }
+            },
+            child: Scaffold(
+              appBar: AppBar(
+                title: Column(
+                  children: [
+                    Text( (state.title == "") ? "노트 생성" : state.title, style: theme.textTheme.bodyLarge),
+                    Text(formatDuration(state.duration), style: theme.textTheme.labelSmall),
+                  ],
+                ),
+              ),
+              body: Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 150),
+                    child: state.segments.isEmpty
+                        ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24.0),
+                        child: Text(
+                          "녹음 버튼을 눌러 시작하세요",
+                          style: TextStyle(fontSize: 16),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    )
+                        : ListView.builder(
+                      padding: const EdgeInsets.all(16.0),
+                      itemCount: state.segments.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Text(
+                            state.segments[index],
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      height: 150,
+                      padding: const EdgeInsets.all(16.0),
+                      color: theme.scaffoldBackgroundColor,
+                      child: RecordingControlBar(
+                        onMicTap: () {
+                          final bloc = context.read<RecordingBloc>();
+                          print("현재 상태는? : ${state.status}");
+                          switch (state.status) {
+                            case RecordingStatus.idle:
+                            case RecordingStatus.stopped:
+                              bloc.add(StartRecording());
+                              break;
+                            case RecordingStatus.recording:
+                              bloc.add(PauseRecording());
+                              break;
+                            case RecordingStatus.paused:
+                              bloc.add(ResumeRecording());
+                              break;
+                            default:
+                              print("이게 무슨 상태인데? : ${state.status}");
+                              break;
+                          }
+                        },
+                        onFinish: () {
+                          _onFinishAndTranslate(
+                              context, state, summaryService, state.title,
+                              state.meetingContext);
+                        },
+                        segments: state.segments,
+                      ),
+                    ),
+                  ),
+
+                  if (showLoadingIndicator)
+                    const Center(
+                      child: LoadingOverlay(),
+                    ),
+                ],
+              ),
             ),
           ),
         );
