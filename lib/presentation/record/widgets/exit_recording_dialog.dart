@@ -14,7 +14,6 @@ class ExitRecordingDialog extends StatelessWidget {
       title: Text(
         '녹음 종료',
         style: theme.textTheme.titleLarge?.copyWith(
-          color: theme.primaryColor,
           fontWeight: FontWeight.bold,
         ),
       ),

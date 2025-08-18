@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:toastification/toastification.dart';
 import 'firebase_options.dart';
@@ -29,10 +31,13 @@ void main() async {
   // env
   await dotenv.load(fileName: ".env");
 
+  // fetch supabase key
+  final String supabseAnonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? "";
+
   // supabase 초기화
   await Supabase.initialize(
     url: "https://otgijzsaalfsddcxdbpi.supabase.co",
-    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90Z2lqenNhYWxmc2RkY3hkYnBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMTczNjcsImV4cCI6MjA2ODg5MzM2N30.QyQu7z2cvQH7W43wX4yzB96_sVVybiy3sL24GXqJ-Ko",
+    anonKey: supabseAnonKey,
   );
 
   // firebase

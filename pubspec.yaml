@@ -16,12 +16,14 @@ dependencies:
   firebase_core: ^3.15.2
   firebase_ai: ^2.3.0
 
+  # network
+  dio: ^5.9.0
+
   # permisson
   permission_handler: ^12.0.1
 
-  # TTS & Translate
-  speech_to_text: ^7.2.0
-  audio_waveforms: ^1.3.0
+  # Sound & Record
+  record: ^6.0.0
 
   # config
   flutter_dotenv: ^5.2.1
@@ -39,6 +41,7 @@ dependencies:
   pdf: ^3.10.8
   share_plus: ^11.0.0
 
+
   # etc
   equatable: ^2.0.7
   uuid: ^4.5.1
@@ -50,6 +53,8 @@ dependencies:
   toastification: ^3.0.3
   pull_down_button: ^0.10.2
   table_calendar: ^3.2.0
+  vad: ^0.0.6
+  audio_waveforms: ^1.3.0
 
 flutter_native_splash:
   android: true

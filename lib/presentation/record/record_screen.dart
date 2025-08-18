@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:bevert/core/di/locator.dart';
 import 'package:bevert/core/routes/router.dart';
+import 'package:bevert/core/services/helper/format_duration.dart';
 import 'package:bevert/core/services/summary_service.dart';
 import 'package:bevert/data/models/transcript_record/transcript_record_model.dart';
 import 'package:bevert/presentation/home/bloc/transcript_record_bloc/transcript_bloc.dart';
@@ -48,6 +49,7 @@ class _RecordScreenViewState extends State<_RecordScreenView> with WidgetsBindin
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this); // 옵저버 등록
+    // context.read<RecordingBloc>()..
   }
 
   @override
@@ -81,6 +83,7 @@ class _RecordScreenViewState extends State<_RecordScreenView> with WidgetsBindin
     }
   }
 
+  // 회의 개요 입력 모달
   void _showMeetingInfoDialog(BuildContext context) {
     final bloc = context.read<RecordingBloc>();
     final state = bloc.state;
@@ -108,6 +111,7 @@ class _RecordScreenViewState extends State<_RecordScreenView> with WidgetsBindin
     );
   }
 
+  // 로딩 다이어로그
   void _showLoadingDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -135,9 +139,7 @@ class _RecordScreenViewState extends State<_RecordScreenView> with WidgetsBindin
       String meetingContext) async {
     context.read<RecordingBloc>().add(StopRecording());
 
-    final fullTranscript = (state.segments + [state.currentWords])
-        .join(' ')
-        .trim();
+    final fullTranscript = state.segments.join(' ').trim();
     if (fullTranscript.isEmpty) return;
 
     _showLoadingDialog(context);
@@ -159,7 +161,7 @@ class _RecordScreenViewState extends State<_RecordScreenView> with WidgetsBindin
     );
 
     context.read<TranscriptBloc>().add(
-        SaveTranscriptEvent(newRecord)); // 새로운 노트 저징
+        SaveTranscriptEvent(newRecord));
   }
 
   @override
@@ -169,14 +171,11 @@ class _RecordScreenViewState extends State<_RecordScreenView> with WidgetsBindin
 
     final status = context.watch<RecordingBloc>().state.status;
     final bool showLoadingIndicator =
-        status == RecordingStatus.initializing ||
-            status == RecordingStatus.pausing ||
-            status == RecordingStatus.resuming;
+        status == RecordingStatus.initializing || status == RecordingStatus.resuming;
 
     return BlocBuilder<RecordingBloc, RecordingState>(
       builder: (context, state) {
-        final displayTranscript = (state.segments + [state.currentWords])
-            .join();
+        final displayTranscript = state.segments.join('\n');
 
         return BlocListener<TranscriptBloc, TranscriptState>(
           listenWhen: (previous, current) => current is TranscriptSaved,
@@ -189,8 +188,11 @@ class _RecordScreenViewState extends State<_RecordScreenView> with WidgetsBindin
             onPopInvokedWithResult: (didPop, result) {
               if (didPop) return;
 
+              // 스크립트가 비어있을 경우
               if (displayTranscript.isEmpty) {
                 context.pop();
+
+                // 스크립트가 존재할 경우 -> Dialog 생성
               } else {
                 final bloc = context.read<RecordingBloc>();
                 bloc.add(PauseRecording());
@@ -208,50 +210,40 @@ class _RecordScreenViewState extends State<_RecordScreenView> with WidgetsBindin
             },
             child: Scaffold(
               appBar: AppBar(
-                title: Text( (state.title == "") ? "노트 생성" : state.title, style: theme.textTheme.bodyLarge),
+                title: Column(
+                  children: [
+                    Text( (state.title == "") ? "노트 생성" : state.title, style: theme.textTheme.bodyLarge),
+                    Text(formatDuration(state.duration), style: theme.textTheme.labelSmall),
+                  ],
+                ),
               ),
               body: Stack(
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(bottom: 150),
-                    child: CustomScrollView(
-                      slivers: [
-                        SliverPadding(
-                          padding: const EdgeInsets.all(16.0),
-                          sliver: SliverToBoxAdapter(
-                            child: Container(
-                              width: double.infinity,
-                              height: MediaQuery
-                                  .of(context)
-                                  .size
-                                  .height - 150 - 32,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8.0),
-                              ),
-                              child: displayTranscript.isEmpty
-                                  ? Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(24.0),
-                                  child: Text(
-                                    "녹음버튼을 눌러 시작하세요",
-                                    style: TextStyle(fontSize: 16),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              )
-                                  : Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Text(
-                                  displayTranscript,
-                                  style: theme.textTheme.bodySmall,
-                                  softWrap: true,
-                                  textAlign: TextAlign.start,
-                                ),
-                              ),
-                            ),
-                          ),
+                    child: state.segments.isEmpty
+                        ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24.0),
+                        child: Text(
+                          "녹음 버튼을 눌러 시작하세요",
+                          style: TextStyle(fontSize: 16),
+                          textAlign: TextAlign.center,
                         ),
-                      ],
+                      ),
+                    )
+                        : ListView.builder(
+                      padding: const EdgeInsets.all(16.0),
+                      itemCount: state.segments.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Text(
+                            state.segments[index],
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        );
+                      },
                     ),
                   ),
                   Positioned(
@@ -263,12 +255,9 @@ class _RecordScreenViewState extends State<_RecordScreenView> with WidgetsBindin
                       padding: const EdgeInsets.all(16.0),
                       color: theme.scaffoldBackgroundColor,
                       child: RecordingControlBar(
-                        recordDuration: state.duration,
-                        controller: context
-                            .read<RecordingBloc>()
-                            .recorderController,
                         onMicTap: () {
                           final bloc = context.read<RecordingBloc>();
+                          print("현재 상태는? : ${state.status}");
                           switch (state.status) {
                             case RecordingStatus.idle:
                             case RecordingStatus.stopped:
@@ -281,6 +270,7 @@ class _RecordScreenViewState extends State<_RecordScreenView> with WidgetsBindin
                               bloc.add(ResumeRecording());
                               break;
                             default:
+                              print("이게 무슨 상태인데? : ${state.status}");
                               break;
                           }
                         },
@@ -289,10 +279,7 @@ class _RecordScreenViewState extends State<_RecordScreenView> with WidgetsBindin
                               context, state, summaryService, state.title,
                               state.meetingContext);
                         },
-                        onTranslate: () {
-                          // 번역 버튼 액션
-                        },
-                        translatedSegments: state.segments,
+                        segments: state.segments,
                       ),
                     ),
                   ),

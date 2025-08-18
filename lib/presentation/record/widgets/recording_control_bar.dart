@@ -1,151 +1,123 @@
-import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:bevert/presentation/record/bloc/recording/recording_bloc.dart';
 import 'package:bevert/presentation/record/bloc/recording/recording_state.dart';
+import 'package:bevert/presentation/record/widgets/recording_ripple_animation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class RecordingControlBar extends StatelessWidget {
-  final int recordDuration;
-  final RecorderController controller;
   final VoidCallback onMicTap;
-  final VoidCallback onTranslate;
   final VoidCallback onFinish;
-  final List<String> translatedSegments;
+  final List<String> segments;
 
   const RecordingControlBar({
     super.key,
-    required this.recordDuration,
-    required this.controller,
     required this.onMicTap,
-    required this.onTranslate,
     required this.onFinish,
-    required this.translatedSegments,
+    required this.segments,
   });
-
-  String _formatDuration(int seconds) {
-    final minutes = (seconds ~/ 60).toString().padLeft(2, '0');
-    final remainingSeconds = (seconds % 60).toString().padLeft(2, '0');
-    return '$minutes:$remainingSeconds';
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final screenWidth = MediaQuery.of(context).size.width;
-    final status = context.watch<RecordingBloc>().state.status;
+    final state = context.watch<RecordingBloc>().state;
+    final status = state.status;
 
     final isRecording = status == RecordingStatus.recording;
     final isPaused = status == RecordingStatus.paused;
     final isInitializing = status == RecordingStatus.initializing;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeInOut,
+    final amplitude = state.amplitude.clamp(0.0, 1.0);
+    final double buttonSize = 64; // 아이콘 크기 고정
+    final double horizontalPadding = 16;
+    final double sideButtonWidth = 40;
+
+    return Container(
       height: 150,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          // 마이크 버튼
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isRecording && !isPaused
-                  ? Colors.redAccent
-                  : theme.primaryColor,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+          // 좌측 임시 아이콘 + 우측 버튼
+          if (!isRecording || isPaused)
+            Row(
+              children: [
+                SizedBox(
+                  width: sideButtonWidth,
+                  height: sideButtonWidth,
+                  child: Icon(Icons.g_translate, color: theme.hintColor,),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: segments.isEmpty ? null : onFinish,
+                  style: TextButton.styleFrom(
+                    foregroundColor: segments.isEmpty
+                        ? theme.disabledColor
+                        : theme.primaryColor,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                  ),
+                  child: Text(
+                    '노트 종료',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: segments.isEmpty
+                          ? theme.dividerColor
+                          : theme.colorScheme.secondary,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+          // 녹음 중일 때 오른쪽 X 버튼만
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                onPressed: onMicTap,
+                icon: const Icon(Icons.close),
+              ),
+            ),
+
+          // 중앙 녹음 버튼 + 발화 파동
+          Align(
+            alignment: Alignment.center,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (isRecording && !isPaused && amplitude > 0.01)
+                  MultiRippleAnimation(
+                    size: buttonSize,
+                    amplitude: amplitude,
+                    color: theme.focusColor,
+                    rippleCount: 3,
+                  ),
+                Container(
+                  width: buttonSize,
+                  height: buttonSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isRecording && !isPaused
+                        ? theme.focusColor
+                        : theme.primaryColor,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.mic,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                    onPressed: isInitializing ? null : onMicTap,
+                  ),
                 ),
               ],
             ),
-            child: IconButton(
-              icon: Icon(
-                isRecording
-                    ? (isPaused ? Icons.mic : Icons.pause)
-                    : Icons.mic,
-                color: Colors.white,
-                size: 32,
-              ),
-              onPressed: isInitializing ? null : onMicTap,
-            ),
           ),
-
-          const SizedBox(width: 16),
-
-          if (isRecording && !isPaused) ...[
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _formatDuration(recordDuration),
-                    style: theme.textTheme.titleMedium
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 40,
-                    child: AudioWaveforms(
-                      recorderController: controller,
-                      waveStyle: WaveStyle(
-                        waveColor: theme.primaryColor,
-                        extendWaveform: true,
-                        showMiddleLine: false,
-                      ),
-                      size: Size(screenWidth - 64 - 16 - 40, 40),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ] else ...[
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    onPressed: onTranslate,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                    ),
-                    child: const Text('번역', style: TextStyle(fontSize: 16)),
-                  ),
-                  ElevatedButton(
-                    onPressed: translatedSegments.isEmpty ? null : onFinish,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                    ),
-                    child: Text(
-                      '종료 및 문서번역',
-                      style: theme.textTheme.labelMedium,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
     );
