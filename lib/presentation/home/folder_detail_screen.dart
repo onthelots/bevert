@@ -295,8 +295,29 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
                                     child: ListTile(
                                       title: Text(transcript.title, maxLines: 1,
                                           overflow: TextOverflow.ellipsis, style: theme.textTheme.titleSmall,),
-                                      subtitle: Text(
-                                          formatToKST(transcript.createdAt), style: theme.textTheme.labelSmall,),
+                                      subtitle: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                              formatToKST(transcript.createdAt), style: theme.textTheme.labelSmall,),
+                                          if (transcript.status == 'processing')
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 4.0),
+                                              child: Text(
+                                                '요약 중...',
+                                                style: theme.textTheme.labelSmall?.copyWith(color: Colors.orange), // 요약 중 색상
+                                              ),
+                                            )
+                                          else if (transcript.status == 'failed')
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 4.0),
+                                              child: Text(
+                                                '요약 실패',
+                                                style: theme.textTheme.labelSmall?.copyWith(color: Colors.red), // 요약 실패 색상
+                                              ),
+                                            ),
+                                        ],
+                                      ),
                                       trailing: const Icon(Icons.chevron_right),
                                         onTap: () {
                                           context.push(

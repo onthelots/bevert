@@ -13,6 +13,7 @@ import 'package:bevert/presentation/record/bloc/recording/recording_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart' show Uuid;
 import 'widgets/exit_recording_dialog.dart';
 import 'widgets/meeting_info_bottom_sheet.dart';
@@ -111,62 +112,54 @@ class _RecordScreenViewState extends State<_RecordScreenView> with WidgetsBindin
     );
   }
 
-  // 로딩 다이어로그
-  void _showLoadingDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const Dialog(
-          child: Padding(
-            padding: EdgeInsets.all(20.0),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(width: 20),
-                Text("회의록을 요약하는 중..."),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
+  /// 요약본 저장로직
   Future<void> _onFinishAndTranslate(BuildContext context, RecordingState state,
-      SummaryService summaryService, String title,
-      String meetingContext) async {
+      String title, String meetingContext) async {
     context.read<RecordingBloc>().add(StopRecording());
 
     final fullTranscript = state.segments.join(' ').trim();
-    if (fullTranscript.isEmpty) return;
-
-    _showLoadingDialog(context);
-
-    final summary = await summaryService.summarize(
-        fullTranscript, context: meetingContext);
-    Navigator.of(context).pop();
+    if (fullTranscript.isEmpty) {
+      // 스크립트가 없으면 그냥 화면을 닫습니다.
+      context.pop();
+      return;
+    }
 
     final now = DateTime.now().toLocal();
     final fallbackTitle = '제목없음_${now.toString().substring(0, 16)}';
+    final newRecordId = const Uuid().v4();
 
+    // 1. 'processing' 상태의 레코드를 먼저 생성합니다.
     final newRecord = TranscriptRecord(
-      id: const Uuid().v4(),
+      id: newRecordId,
       title: title.isEmpty ? fallbackTitle : title,
       folderName: widget.folderName,
       transcript: fullTranscript,
-      summary: summary,
+      summary: "요약이 진행 중입니다...", // 임시 플레이스홀더
       createdAt: DateTime.now().toUtc(),
+      status: 'processing', // '처리 중' 상태로 설정
     );
 
-    context.read<TranscriptBloc>().add(
-        SaveTranscriptEvent(newRecord));
+    // 2. '처리 중' 상태로 먼저 DB에 저장합니다.
+    // 이 이벤트가 처리된 후 BlocListener가 화면을 이동시킬 것입니다.
+    context.read<TranscriptBloc>().add(SaveTranscriptEvent(newRecord));
+
+    try {
+      // 3. Supabase Edge Function을 호출하여 백그라운드 요약을 요청합니다.
+      // 앱은 여기서 결과를 기다리지 않습니다 (fire and forget).
+      final supabase = locator<SupabaseClient>(); // DI를 통해 Supabase 클라이언트 가져오기
+      await supabase.functions.invoke('summarize', body: {
+        'recordId': newRecordId,
+        'meetingContext': meetingContext,
+      });
+    } catch (e) {
+      print('Edge Function 호출 실패: $e');
+      // 실패 시 DB 상태를 'failed'로 업데이트하는 로직을 BLoC에 추가할 수 있습니다.
+      context.read<TranscriptBloc>().add(UpdateStatusEvent(newRecordId, 'failed', 'Edge Function 호출에 실패했습니다.'));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final summaryService = SummaryService();
     final theme = Theme.of(context);
 
     final status = context.watch<RecordingBloc>().state.status;
@@ -276,7 +269,7 @@ class _RecordScreenViewState extends State<_RecordScreenView> with WidgetsBindin
                         },
                         onFinish: () {
                           _onFinishAndTranslate(
-                              context, state, summaryService, state.title,
+                              context, state, state.title,
                               state.meetingContext);
                         },
                         segments: state.segments,

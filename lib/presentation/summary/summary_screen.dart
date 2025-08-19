@@ -15,6 +15,12 @@ import 'package:share_plus/share_plus.dart';
 
 class SummaryScreen extends StatelessWidget {
   final TranscriptRecord transcriptRecord;
+
+  /*
+  fromRecord
+  - 녹음 이후 Summary : true
+  - 일반 Summary 접근 : false
+   */
   final bool fromRecord;
 
   const SummaryScreen({
@@ -27,16 +33,22 @@ class SummaryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    // TabBar View Controller
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: Text(transcriptRecord.title, style: theme.textTheme.titleMedium),
+
+          // action buttons
           leading: fromRecord ? null : const BackButton(),
+
+          // action buttons
           actions: fromRecord
               ? null
               : [
-            // 폴더 이동
+
+            /// 폴더 이동
             IconButton(
               icon: const Icon(Icons.drive_file_move_outline),
               tooltip: '폴더 이동',
@@ -75,7 +87,7 @@ class SummaryScreen extends StatelessWidget {
               },
             ),
 
-            // 삭제
+            /// 삭제
             IconButton(
               icon: const Icon(Icons.delete),
               tooltip: '노트 삭제',
@@ -108,7 +120,7 @@ class SummaryScreen extends StatelessWidget {
               },
             ),
 
-            // 공유
+            /// 공유
             IconButton(
               icon: const Icon(Icons.share),
               tooltip: '공유',
@@ -118,13 +130,16 @@ class SummaryScreen extends StatelessWidget {
             ),
           ],
 
+          // appBar bottom
           bottom: TabBar(
-            dividerColor: Colors.transparent,
+            dividerColor: theme.scaffoldBackgroundColor,
             indicatorColor: theme.primaryColor,
-            tabs: const [
+            tabs: [
               Tab(text: 'AI 문서'),
               Tab(text: '전체 스크립트'),
             ],
+            labelStyle: theme.textTheme.labelMedium,
+            labelColor: theme.colorScheme.primary,
           ),
         ),
 
@@ -136,14 +151,10 @@ class SummaryScreen extends StatelessWidget {
               child: SingleChildScrollView(
                 child: Container(
                   padding: const EdgeInsets.all(12.0),
-                  decoration: BoxDecoration(
-                    color: theme.cardColor,
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
                   child: MarkdownBody(
                     data: transcriptRecord.summary,
                     styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                      p: theme.textTheme.bodySmall,
+                      p: theme.textTheme.bodyMedium,
                       h1: theme.textTheme.titleLarge,
                       h2: theme.textTheme.titleMedium,
                       strong: const TextStyle(fontWeight: FontWeight.bold),

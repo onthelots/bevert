@@ -5,6 +5,7 @@ class TranscriptRecord {
   final String transcript;
   final String summary;
   final DateTime createdAt;
+  final String status; // 'processing', 'completed', 'failed'
 
   TranscriptRecord({
     required this.id,
@@ -13,6 +14,7 @@ class TranscriptRecord {
     required this.transcript,
     required this.summary,
     required this.createdAt,
+    this.status = 'completed', // 기본값은 'completed'로 설정
   });
 
   factory TranscriptRecord.fromMap(Map<String, dynamic> map) {
@@ -23,6 +25,7 @@ class TranscriptRecord {
       transcript: map['transcript'],
       summary: map['summary'],
       createdAt: DateTime.parse(map['created_at']),
+      status: map['status'] ?? 'completed', // DB에 status가 없으면 'completed'
     );
   }
 
@@ -34,6 +37,7 @@ class TranscriptRecord {
       'transcript': transcript,
       'summary': summary,
       'created_at': createdAt.toIso8601String(),
+      'status': status,
     };
   }
 }

@@ -7,8 +7,8 @@ class FetchTranscriptsUseCase {
 
   FetchTranscriptsUseCase(this._repository);
 
-  Future<List<TranscriptRecord>> call({String? folderName, String? query}) async {
-    return await _repository.fetchAllTranscripts(folderName: folderName, query: query);
+  Stream<List<TranscriptRecord>> call({String? folderName, String? query}) {
+    return _repository.streamAllTranscripts(folderName: folderName, query: query);
   }
 }
 
@@ -42,5 +42,16 @@ class MoveTranscriptUseCase {
 
   Future<void> call({required String transcriptId, required String newFolderName}) async {
     await _repository.updateTranscriptFolder(transcriptId, newFolderName);
+  }
+}
+
+// 노트 상태 업데이트
+class UpdateTranscriptStatusUseCase {
+  final TranscriptRepository _repository;
+
+  UpdateTranscriptStatusUseCase(this._repository);
+
+  Future<void> call(String id, String status, String? summary) async {
+    await _repository.updateTranscriptStatus(id, status, summary);
   }
 }
