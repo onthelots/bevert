@@ -41,7 +41,7 @@ class _NotesByDateScreenState extends State<NotesByDateScreen> {
     });
 
     try {
-      final records = await _fetchTranscriptsUseCase.call();
+      final records = await _fetchTranscriptsUseCase.call().first;
       final events = LinkedHashMap<DateTime, List<TranscriptRecord>>(
         equals: isSameDay,
         hashCode: (key) => key.day * 1000000 + key.month * 10000 + key.year,
@@ -65,6 +65,7 @@ class _NotesByDateScreenState extends State<NotesByDateScreen> {
       setState(() {
         _isLoading = false;
       });
+      print('Error loading transcripts: $e');
     }
   }
 

@@ -29,3 +29,14 @@ class MoveTranscriptEvent extends TranscriptEvent {
 
   MoveTranscriptEvent({required this.transcriptId, required this.newFolderName, required this.currentFolderName});
 }
+
+class UpdateStatusEvent extends TranscriptEvent {
+  final String recordId;
+  final String status;
+  final String? summary; // 실패 시 에러 메시지를 담을 수 있음
+
+  UpdateStatusEvent(this.recordId, this.status, [this.summary]);
+
+  @override
+  List<Object?> get props => [recordId, status, summary];
+}

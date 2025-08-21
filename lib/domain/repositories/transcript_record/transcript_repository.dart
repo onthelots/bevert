@@ -3,10 +3,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract class TranscriptRepository {
   Future<List<TranscriptRecord>> fetchAllTranscripts({String? folderName, String? query});
+  Stream<List<TranscriptRecord>> streamAllTranscripts({String? folderName, String? query});
   Future<void> saveTranscript(TranscriptRecord record);
   Future<void> updateFolderNameForTranscripts(String oldName, String newName);
   Future<void> deleteTranscript(String transcriptId); // 추가
   Future<void> updateTranscriptFolder(String id, String newFolderName);
+  Future<void> updateTranscriptStatus(String id, String status, String? summary);
 }
 
 class SupabaseTranscriptRepository implements TranscriptRepository {
@@ -53,6 +55,26 @@ class SupabaseTranscriptRepository implements TranscriptRepository {
   }
 
   @override
+  Stream<List<TranscriptRecord>> streamAllTranscripts({String? folderName, String? query}) {
+    var streamBuilder = _client
+        .from('transcripts')
+        .stream(primaryKey: ['id']);
+
+    if (folderName != null) {
+      // folderName이 있을 경우, eq()를 체인으로 연결하여 새로운 스트림 빌더를 반환
+      return streamBuilder
+          .eq('folderName', folderName)
+          .order('created_at', ascending: false)
+          .map((maps) => maps.map((map) => TranscriptRecord.fromMap(map)).toList());
+    } else {
+      // folderName이 없을 경우, 원래의 스트림 빌더에 order()를 적용하여 반환
+      return streamBuilder
+          .order('created_at', ascending: false)
+          .map((maps) => maps.map((map) => TranscriptRecord.fromMap(map)).toList());
+    }
+  }
+
+  @override
   Future<void> updateFolderNameForTranscripts(String oldName,
       String newName) async {
     await _client
@@ -73,6 +95,7 @@ class SupabaseTranscriptRepository implements TranscriptRepository {
     }
   }
 
+  @override
   Future<void> updateTranscriptFolder(String id, String newFolderName) async {
     try {
       await _client
@@ -81,6 +104,22 @@ class SupabaseTranscriptRepository implements TranscriptRepository {
           .eq('id', id);
     } catch (e) {
       throw Exception('노트 폴더 이동 실패: $e');
+    }
+  }
+
+  @override
+  Future<void> updateTranscriptStatus(String id, String status, String? summary) async {
+    try {
+      final updateData = {'status': status};
+      if (summary != null) {
+        updateData['summary'] = summary;
+      }
+      await _client
+          .from('transcripts')
+          .update(updateData)
+          .eq('id', id);
+    } catch (e) {
+      throw Exception('Failed to update transcript status: $e');
     }
   }
 }
