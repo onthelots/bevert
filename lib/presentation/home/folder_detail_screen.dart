@@ -286,6 +286,8 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
                                           ),
                                     );
                                   },
+
+                                  /// 노트(transcript) Card
                                   child: Card(
                                     margin: const EdgeInsets.symmetric(
                                         vertical: 6),
@@ -305,7 +307,7 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
                                               padding: const EdgeInsets.only(top: 4.0),
                                               child: Text(
                                                 '요약 중...',
-                                                style: theme.textTheme.labelSmall?.copyWith(color: Colors.orange), // 요약 중 색상
+                                                style: theme.textTheme.labelSmall?.copyWith(color: theme.focusColor), // 요약 중 색상
                                               ),
                                             )
                                           else if (transcript.status == 'failed')
