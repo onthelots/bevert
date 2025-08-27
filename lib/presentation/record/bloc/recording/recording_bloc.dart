@@ -103,14 +103,10 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
 
       // 🔹 전처리
       text = text.trim();
-      text = text.replaceAll(RegExp(r'\s+'), ' ');
-      if (text.length < 3) return; // 너무 짧으면 무시
+      if (text.isEmpty) return; // 비어있으면 무시
 
-      // 🔹 오인식 필터
-      final blacklist = [
-        '구독과 좋아요', '좋아요 부탁', '댓글 달아', 'subscribe', 'like'
-      ];
-      if (blacklist.any((pattern) => text.contains(pattern))) return;
+      // 공백 정규화
+      text = text.replaceAll(RegExp(r'\s+'), ' ');
 
       final updatedSegments = List<String>.from(state.segments)..add(text);
       emit(state.copyWith(segments: updatedSegments));

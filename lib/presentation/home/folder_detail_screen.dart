@@ -302,7 +302,7 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
                                         children: [
                                           Text(
                                               formatToKST(transcript.createdAt), style: theme.textTheme.labelSmall,),
-                                          if (transcript.status == 'processing')
+                                          if (transcript.status == SummaryStatus.processing)
                                             Padding(
                                               padding: const EdgeInsets.only(top: 4.0),
                                               child: Text(
@@ -310,7 +310,7 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
                                                 style: theme.textTheme.labelSmall?.copyWith(color: theme.focusColor), // 요약 중 색상
                                               ),
                                             )
-                                          else if (transcript.status == 'failed')
+                                          else if (transcript.status == SummaryStatus.failed)
                                             Padding(
                                               padding: const EdgeInsets.only(top: 4.0),
                                               child: Text(
@@ -324,7 +324,7 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
                                         onTap: () {
                                           context.push(
                                             AppRouter.summary.path,
-                                            extra: (transcript, false),
+                                            extra: transcript,
                                           );
                                         }
                                     ),

@@ -1,5 +1,8 @@
+import 'package:bevert/core/di/locator.dart';
+import 'package:bevert/data/models/transcript_record/transcript_record_model.dart';
 import 'package:bevert/domain/usecases/transcript_record/transcript_usecase.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'transcript_event.dart';
 import 'transcript_state.dart';
 
@@ -8,7 +11,7 @@ class TranscriptBloc extends Bloc<TranscriptEvent, TranscriptState> {
   final SaveTranscriptUseCase saveUseCase;
   final DeleteTranscriptUseCase deleteUseCase;
   final MoveTranscriptUseCase moveUseCase;
-  final UpdateTranscriptStatusUseCase updateStatusUseCase;
+  final UpdateSummaryStatusUseCase updateStatusUseCase;
 
   TranscriptBloc(
       this.fetchUseCase,
@@ -21,7 +24,8 @@ class TranscriptBloc extends Bloc<TranscriptEvent, TranscriptState> {
     on<SaveTranscriptEvent>(_onSave);
     on<DeleteTranscriptEvent>(_onDelete);
     on<MoveTranscriptEvent>(_onMove);
-    on<UpdateStatusEvent>((event, emit) async {
+    on<SummarizeTranscriptEvent>(_onSummarizeTranscript);
+    on<UpdateSummaryStatusEvent>((event, emit) async {
       try {
         await updateStatusUseCase(event.recordId, event.status, event.summary);
         add(LoadTranscriptsEvent()); // 상태 업데이트 후 목록 새로고침
@@ -73,6 +77,31 @@ class TranscriptBloc extends Bloc<TranscriptEvent, TranscriptState> {
       add(LoadTranscriptsEvent(folderName: event.currentFolderName));
     } catch (e) {
       emit(TranscriptError('폴더 이동 실패: $e'));
+    }
+  }
+
+  Future<void> _onSummarizeTranscript(
+      SummarizeTranscriptEvent event,
+      Emitter<TranscriptState> emit,
+      ) async {
+    try {
+      // 1. DB 상태를 'processing'으로 변경 -> 스트림이 감지하여 UI 업데이트
+      await updateStatusUseCase(event.recordId, SummaryStatus.processing, null);
+
+      // 2. Supabase 함수 호출 (fire and forget)
+      final supabase = locator<SupabaseClient>();
+      supabase.functions.invoke('summarize', body: {
+        'recordId': event.recordId,
+        'meetingContext': event.meetingContext,
+      }).catchError((e) async {
+        // 함수 호출 자체의 실패 처리
+        print('Edge Function 호출 실패: $e');
+        await updateStatusUseCase(event.recordId, SummaryStatus.failed, 'Edge Function 호출에 실패했습니다.');
+      });
+    } catch (e) {
+      // updateStatusUseCase 실패 처리
+      print('상태 업데이트 실패: $e');
+      await updateStatusUseCase(event.recordId, SummaryStatus.failed, '상태 업데이트에 실패했습니다.');
     }
   }
 }

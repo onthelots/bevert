@@ -201,7 +201,7 @@ class _NotesByDateScreenState extends State<NotesByDateScreen> {
                                   style: theme.textTheme.bodySmall,
                                 ),
                                 onTap: () {
-                                  context.push(AppRouter.summary.path, extra: (record, false));
+                                  context.push(AppRouter.summary.path, extra: record);
                                 },
                               ),
                             );

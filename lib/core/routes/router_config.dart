@@ -51,8 +51,8 @@ final GoRouter appRouter = GoRouter(
       path: AppRouter.summary.path,
       name: AppRouter.summary.name,
       builder: (context, state) {
-        final (transcriptRecord, fromRecord) = state.extra as (TranscriptRecord, bool);
-        return SummaryScreen(transcriptRecord: transcriptRecord, fromRecord: fromRecord,);
+        final transcriptRecord = state.extra as TranscriptRecord;
+        return SummaryScreen(transcriptRecord: transcriptRecord);
       },
     ),
 
@@ -86,17 +86,5 @@ final GoRouter appRouter = GoRouter(
       name: AppRouter.language.name,
       builder: (context, state) => const LanguageScreen(),
     ),
-
-    // GoRoute(
-    //   path: AppRouter.policy.path,
-    //   name: AppRouter.policy.name,
-    //   builder: (context, state) => const PolicyScreen(),
-    // ),
-
-    // GoRoute(
-    //   path: AppRouter.about.path,
-    //   name: AppRouter.about.name,
-    //   builder: (context, state) => const AboutScreen(),
-    // ),
   ],
 );

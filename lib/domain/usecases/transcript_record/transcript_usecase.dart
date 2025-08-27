@@ -46,12 +46,12 @@ class MoveTranscriptUseCase {
 }
 
 // 노트 상태 업데이트
-class UpdateTranscriptStatusUseCase {
+class UpdateSummaryStatusUseCase {
   final TranscriptRepository _repository;
 
-  UpdateTranscriptStatusUseCase(this._repository);
+  UpdateSummaryStatusUseCase(this._repository);
 
-  Future<void> call(String id, String status, String? summary) async {
-    await _repository.updateTranscriptStatus(id, status, summary);
+  Future<void> call(String id, SummaryStatus status, String? summary) async {
+    await _repository.updateSummaryStatus(id, status, summary);
   }
 }
