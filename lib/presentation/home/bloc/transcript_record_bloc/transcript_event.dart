@@ -59,9 +59,10 @@ class UpdateSummaryStatusEvent extends TranscriptEvent {
 class SummarizeTranscriptEvent extends TranscriptEvent {
   final String recordId;
   final String meetingContext;
+  final String folderName;
 
-  const SummarizeTranscriptEvent({required this.recordId, required this.meetingContext});
+  const SummarizeTranscriptEvent({required this.recordId, required this.meetingContext, required this.folderName});
 
   @override
-  List<Object> get props => [recordId, meetingContext];
+  List<Object> get props => [recordId, meetingContext, folderName];
 }

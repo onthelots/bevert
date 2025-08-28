@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract class TranscriptRepository {
   Future<List<TranscriptRecord>> fetchAllTranscripts({String? folderName, String? query}); // 전체 노트 가져오기
-  Stream<List<TranscriptRecord>> streamAllTranscripts({String? folderName, String? query}); //
+  Stream<List<TranscriptRecord>> streamAllTranscripts({String? folderName, String? query}); // 전체 노트 스트리밍
   Future<void> saveTranscript(TranscriptRecord record);
   Future<void> updateFolderNameForTranscripts(String oldName, String newName);
   Future<void> deleteTranscript(String transcriptId);

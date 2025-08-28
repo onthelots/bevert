@@ -9,6 +9,7 @@ import 'package:bevert/presentation/home/bloc/transcript_record_bloc/transcript_
 import 'package:bevert/presentation/record/bloc/recording/recording_bloc.dart';
 import 'package:bevert/presentation/record/bloc/recording/recording_event.dart';
 import 'package:bevert/presentation/record/bloc/recording/recording_state.dart';
+import 'package:bevert/presentation/record/widgets/completed_recording_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -162,11 +163,20 @@ class _RecordScreenViewState extends State<_RecordScreenView>    with WidgetsBin
           // 번역 완료 시, Listener를 통해 요약 화면으로 이동
           listenWhen: (previous, current) => current is TranscriptSaved,
           listener: (context, state) {
-            // TODO: - 녹음 완료 후, STT Transcripts 저장이 완료되었을 경우, Dialog를 띄우고 뒤로 내보내기.
-            // 폴더 > 노트에서 직접 요약 버튼을 눌러 사용할 수 있도록 함
-            print("녹음 완료. [폴더]에서 확인할 수 있습니다. 이전 화면으로 이동합니다");
-            // final saved = state as TranscriptSaved;
-            // context.go(AppRouter.summary.path, extra: (saved.transcript));
+            final saved = state as TranscriptSaved;
+
+            showDialog(
+              context: context,
+              barrierDismissible: false, // 배경 터치로 닫힘 방지
+              builder: (dialogContext) =>
+                  CompletedRecordingDialog(
+                    folderName: saved.transcript.folderName,
+                    onConfirm: () {
+                      print("종료");
+                      context.pop();
+                    },
+                  ),
+            );
           },
           child: PopScope(
             canPop: false,

@@ -53,6 +53,7 @@ class SummaryScreen extends StatelessWidget {
               SummarizeTranscriptEvent(
                 recordId: record.id,
                 meetingContext: record.meetingContext, // 실제 meetingContext 값 전달
+                folderName: record.folderName,
               ),
             );
           },
@@ -177,10 +178,12 @@ class SummaryScreen extends StatelessWidget {
               builder: (context, state) {
                 TranscriptRecord currentRecord = transcriptRecord;
                 if (state is TranscriptLoaded) {
-                  currentRecord = state.transcripts.firstWhere(
-                        (r) => r.id == transcriptRecord.id,
-                    orElse: () => transcriptRecord,
-                  );
+                  try {
+                    final foundRecord = state.transcripts.firstWhere((r) => r.id == transcriptRecord.id);
+                    currentRecord = foundRecord;
+                  } catch (e) {
+                    currentRecord = transcriptRecord;
+                  }
                 }
 
                 return Padding(
@@ -201,10 +204,6 @@ class SummaryScreen extends StatelessWidget {
               child: SingleChildScrollView(
                 child: Container(
                   padding: const EdgeInsets.all(12.0),
-                  decoration: BoxDecoration(
-                    color: theme.cardColor,
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
                   child: Text(
                     transcriptRecord.transcript,
                     style: const TextStyle(fontSize: 16, color: Colors.white70),
