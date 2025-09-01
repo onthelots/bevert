@@ -259,7 +259,7 @@ class _RecordScreenViewState extends State<_RecordScreenView>    with WidgetsBin
                     bottom: 0,
                     child: Container(
                       height: 150,
-                      padding: const EdgeInsets.all(16.0),
+                      padding: const EdgeInsets.only(bottom: 16.0, right: 16.0, left: 16.0),
                       color: theme.scaffoldBackgroundColor,
                       child: RecordingControlBar(
                         onMicTap: () {

@@ -1,3 +1,4 @@
+import 'package:bevert/core/components/toast_widget.dart';
 import 'package:bevert/core/constants/constants.dart';
 import 'package:bevert/core/routes/router.dart';
 import 'package:bevert/data/models/transcript_record/transcript_folder_model.dart';
@@ -140,9 +141,7 @@ class SummaryScreen extends StatelessWidget {
                                 context.read<TranscriptBloc>().add(
                                     DeleteTranscriptEvent(transcriptRecord.id, transcriptRecord.folderName));
                                 Navigator.pop(dialogContext);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('노트가 삭제되었습니다.')),
-                                );
+                                ToastHelper.showSuccess("삭제가 완료되었습니다");
                                 context.pop();
                               },
                               child: const Text('삭제', style: TextStyle(color: Colors.red)),

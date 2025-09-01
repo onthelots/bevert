@@ -34,50 +34,52 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     });
   }
 
+  /// 회의 사전정보 입력 (optional)
   void _onUpdateMeetingInfo(UpdateMeetingInfo event, Emitter<RecordingState> emit) {
     emit(state.copyWith(title: event.title, meetingContext: event.meetingContext));
   }
 
+  /// VAD Setup (listen을 통해 _chunkBuffer에 음성을 할당함)
   void _setupVadHandler(Emitter<RecordingState> emit) {
     _vadHandler!.onFrameProcessed.listen((frame) {
+
+      // 음성(frame)의 인식 정도를 높임 (_speechThreshold의 수치를 임의로 0.5로 설정, 이보다 높아야 _chunk에 할당)
       if (frame.isSpeech > _speechThreshold) {
         _chunkBuffer.addAll(frame.frame.map((e) => (e * 32767).toInt()));
-        add(UpdateAmplitude(frame.isSpeech));
+        add(UpdateAmplitude(frame.isSpeech)); // Speech animation
       }
     });
 
+    // 에러 발생
     _vadHandler!.onError.listen((msg) => add(SpeechError(msg)));
   }
 
+  /// 녹음 시작 (최초 실행)
   Future<void> _onStartRecording(StartRecording event, Emitter<RecordingState> emit) async {
     emit(state.copyWith(status: RecordingStatus.initializing, duration: 0, segments: []));
 
     final hasPermission = await checkAndRequestMicrophonePermission();
     if (!hasPermission) return emit(state.copyWith(status: RecordingStatus.idle));
 
-    _vadHandler = VadHandler.create(isDebug: false);
-    _setupVadHandler(emit);
-    await _vadHandler!.startListening();
+    _vadHandler = VadHandler.create(isDebug: false); // 1. VAD 생성
+    _setupVadHandler(emit); // 2. VAD 세팅 (음성인식 감지 외)
+    await _vadHandler!.startListening(); // 3. 세팅 후, Listening 시작
 
+    // 4. 청크 타이머 (_chunkInterval, 10초마다 강제 전송 _sendChunk)
     _chunkTimer = Timer.periodic(_chunkInterval, (_) => _sendChunk());
-    _startTimer();
+    _startTimer(); // 5. 일반 타이머 재생
 
-    emit(state.copyWith(status: RecordingStatus.recording));
+    emit(state.copyWith(status: RecordingStatus.recording)); // 6. 상태 : recording으로 변경
   }
 
+  /// 녹음 일시정지
   Future<void> _onPauseRecording(PauseRecording event, Emitter<RecordingState> emit) async {
-    _chunkTimer?.cancel();
-    await _vadHandler!.pauseListening();
-    _stopTimer();
-    emit(state.copyWith(status: RecordingStatus.paused));
+    _chunkTimer?.cancel(); // 1. 청크 타이머 취소
+    await _vadHandler!.pauseListening(); // 2. VAD 일시정지
+    _stopTimer(); // 3. 일반 타이머 정지
+    emit(state.copyWith(status: RecordingStatus.paused)); // 4. 상태 : paused
   }
 
-  Future<void> _onResumeRecording(ResumeRecording event, Emitter<RecordingState> emit) async {
-    await _vadHandler!.startListening();
-    _chunkTimer = Timer.periodic(_chunkInterval, (_) => _sendChunk());
-    _startTimer();
-    emit(state.copyWith(status: RecordingStatus.recording));
-  }
 
   Future<void> _onStopRecording(StopRecording event, Emitter<RecordingState> emit) async {
     _chunkTimer?.cancel();
@@ -89,6 +91,15 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     emit(state.copyWith(status: RecordingStatus.stopped));
   }
 
+  /// 녹음 재개 (최초 start와 달리, _vadHalder 세팅 관련된 사항 제외)
+  Future<void> _onResumeRecording(ResumeRecording event, Emitter<RecordingState> emit) async {
+    await _vadHandler!.startListening(); // 1. VAD 재 시작
+    _chunkTimer = Timer.periodic(_chunkInterval, (_) => _sendChunk()); // 2. 청크 타이머 재 시작
+    _startTimer(); // 3. 일반 타이머 시작
+    emit(state.copyWith(status: RecordingStatus.recording)); // 4. 상태 : recording
+  }
+
+  /// 청크 전송 (잘라서)
   void _sendChunk() {
     if (_chunkBuffer.isEmpty) return;
     final wavData = convertPcmToWav(_chunkBuffer);
@@ -96,20 +107,27 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     add(AudioChunkReceived(wavData));
   }
 
+  /// 청크 전송 (STT 기능 실행)
   Future<void> _onAudioChunkReceived(AudioChunkReceived event, Emitter<RecordingState> emit) async {
     try {
+
+      // 1. STT 실행 (event에 저장된 chunk wavData)
       final transcription = await transcribeAudioUseCase(event.chunk);
+
+      // 2. wavData 내 텍스트 추출
       String text = transcription.text;
 
-      // 🔹 전처리
+      // - 전처리
       text = text.trim();
       if (text.isEmpty) return; // 비어있으면 무시
 
-      // 공백 정규화
+      // - 공백 정규화
       text = text.replaceAll(RegExp(r'\s+'), ' ');
 
+      // 3. 세그먼트(실시간 화면) 내 STT를 통해 변환된 텍스트 할당
       final updatedSegments = List<String>.from(state.segments)..add(text);
       emit(state.copyWith(segments: updatedSegments));
+
     } catch (e) {
       debugPrint("Whisper transcription error: $e");
     }
@@ -121,13 +139,16 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     }
   }
 
+  /// 일반 타이머 시작
   void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => add(Tick()));
   }
 
+  /// 일반 타이머 종료
   void _stopTimer() => _timer?.cancel();
 
+  /// 녹음 권한 확인
   Future<bool> checkAndRequestMicrophonePermission() async {
     var status = await Permission.microphone.status;
     if (status.isDenied) status = await Permission.microphone.request();
@@ -138,6 +159,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     return status.isGranted;
   }
 
+  /// Wav Data 생성 <--- VAD 음성데이터 기반
   Uint8List convertPcmToWav(List<int> pcmData) {
     const sampleRate = 16000;
     const numChannels = 1;
@@ -182,6 +204,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     return Uint8List.fromList(header.buffer.asUint8List() + pcmBytes);
   }
 
+  /// dispose 정리
   @override
   Future<void> close() {
     _timer?.cancel();
