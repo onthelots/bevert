@@ -1,6 +1,12 @@
 import 'package:bevert/data/models/transcript_record/transcript_record_model.dart';
+import 'package:equatable/equatable.dart';
 
-abstract class TranscriptEvent {}
+abstract class TranscriptEvent extends Equatable {
+  const TranscriptEvent();
+
+  @override
+  List<Object?> get props => [];
+}
 
 class LoadTranscriptsEvent extends TranscriptEvent {
   final String? folderName;
@@ -12,14 +18,20 @@ class LoadTranscriptsEvent extends TranscriptEvent {
 class SaveTranscriptEvent extends TranscriptEvent {
   final TranscriptRecord record;
 
-  SaveTranscriptEvent(this.record);
+  const SaveTranscriptEvent(this.record);
+
+  @override
+  List<Object> get props => [record];
 }
 
 class DeleteTranscriptEvent extends TranscriptEvent {
   final String transcriptId;
   final String currentFolderName;
 
-  DeleteTranscriptEvent(this.transcriptId, this.currentFolderName);
+  const DeleteTranscriptEvent(this.transcriptId, this.currentFolderName);
+
+  @override
+  List<Object> get props => [transcriptId, currentFolderName];
 }
 
 class MoveTranscriptEvent extends TranscriptEvent {
@@ -27,16 +39,30 @@ class MoveTranscriptEvent extends TranscriptEvent {
   final String newFolderName;
   final String currentFolderName;
 
-  MoveTranscriptEvent({required this.transcriptId, required this.newFolderName, required this.currentFolderName});
+  const MoveTranscriptEvent({required this.transcriptId, required this.newFolderName, required this.currentFolderName});
+
+  @override
+  List<Object> get props => [transcriptId, newFolderName, currentFolderName];
 }
 
-class UpdateStatusEvent extends TranscriptEvent {
+class UpdateSummaryStatusEvent extends TranscriptEvent {
   final String recordId;
-  final String status;
-  final String? summary; // 실패 시 에러 메시지를 담을 수 있음
+  final SummaryStatus status;
+  final String? summary;
 
-  UpdateStatusEvent(this.recordId, this.status, [this.summary]);
+  const UpdateSummaryStatusEvent(this.recordId, this.status, [this.summary]);
 
   @override
   List<Object?> get props => [recordId, status, summary];
+}
+
+class SummarizeTranscriptEvent extends TranscriptEvent {
+  final String recordId;
+  final String meetingContext;
+  final String folderName;
+
+  const SummarizeTranscriptEvent({required this.recordId, required this.meetingContext, required this.folderName});
+
+  @override
+  List<Object> get props => [recordId, meetingContext, folderName];
 }

@@ -1,3 +1,10 @@
+enum SummaryStatus {
+  none,
+  processing,
+  completed,
+  failed,
+}
+
 class TranscriptRecord {
   final String id;
   final String title;
@@ -5,7 +12,8 @@ class TranscriptRecord {
   final String transcript;
   final String summary;
   final DateTime createdAt;
-  final String status; // 'processing', 'completed', 'failed'
+  final SummaryStatus status;
+  final String meetingContext;
 
   TranscriptRecord({
     required this.id,
@@ -14,7 +22,8 @@ class TranscriptRecord {
     required this.transcript,
     required this.summary,
     required this.createdAt,
-    this.status = 'completed', // 기본값은 'completed'로 설정
+    this.status = SummaryStatus.none,
+    this.meetingContext = '',
   });
 
   factory TranscriptRecord.fromMap(Map<String, dynamic> map) {
@@ -25,7 +34,11 @@ class TranscriptRecord {
       transcript: map['transcript'],
       summary: map['summary'],
       createdAt: DateTime.parse(map['created_at']),
-      status: map['status'] ?? 'completed', // DB에 status가 없으면 'completed'
+      status: SummaryStatus.values.firstWhere(
+        (e) => e.name == (map['status'] ?? 'none'),
+        orElse: () => SummaryStatus.none,
+      ),
+      meetingContext: map['meeting_context'] ?? '',
     );
   }
 
@@ -37,7 +50,30 @@ class TranscriptRecord {
       'transcript': transcript,
       'summary': summary,
       'created_at': createdAt.toIso8601String(),
-      'status': status,
+      'status': status.name,
+      'meeting_context': meetingContext,
     };
+  }
+
+  TranscriptRecord copyWith({
+    String? id,
+    String? title,
+    String? folderName,
+    String? transcript,
+    String? summary,
+    DateTime? createdAt,
+    SummaryStatus? status,
+    String? meetingContext,
+  }) {
+    return TranscriptRecord(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      folderName: folderName ?? this.folderName,
+      transcript: transcript ?? this.transcript,
+      summary: summary ?? this.summary,
+      createdAt: createdAt ?? this.createdAt,
+      status: status ?? this.status,
+      meetingContext: meetingContext ?? this.meetingContext,
+    );
   }
 }

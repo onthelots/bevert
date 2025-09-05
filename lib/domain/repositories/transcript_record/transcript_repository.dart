@@ -2,13 +2,13 @@ import 'package:bevert/data/models/transcript_record/transcript_record_model.dar
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract class TranscriptRepository {
-  Future<List<TranscriptRecord>> fetchAllTranscripts({String? folderName, String? query});
-  Stream<List<TranscriptRecord>> streamAllTranscripts({String? folderName, String? query});
+  Future<List<TranscriptRecord>> fetchAllTranscripts({String? folderName, String? query}); // 전체 노트 가져오기
+  Stream<List<TranscriptRecord>> streamAllTranscripts({String? folderName, String? query}); // 전체 노트 스트리밍
   Future<void> saveTranscript(TranscriptRecord record);
   Future<void> updateFolderNameForTranscripts(String oldName, String newName);
-  Future<void> deleteTranscript(String transcriptId); // 추가
+  Future<void> deleteTranscript(String transcriptId);
   Future<void> updateTranscriptFolder(String id, String newFolderName);
-  Future<void> updateTranscriptStatus(String id, String status, String? summary);
+  Future<void> updateSummaryStatus(String id, SummaryStatus status, String? summary);
 }
 
 class SupabaseTranscriptRepository implements TranscriptRepository {
@@ -108,9 +108,9 @@ class SupabaseTranscriptRepository implements TranscriptRepository {
   }
 
   @override
-  Future<void> updateTranscriptStatus(String id, String status, String? summary) async {
+  Future<void> updateSummaryStatus(String id, SummaryStatus status, String? summary) async {
     try {
-      final updateData = {'status': status};
+      final updateData = {'status': status.name};
       if (summary != null) {
         updateData['summary'] = summary;
       }

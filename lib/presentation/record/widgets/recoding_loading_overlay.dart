@@ -7,7 +7,6 @@ class LoadingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = context.watch<RecordingBloc>().state.status;
     final statusText = context.read<RecordingBloc>().state.statusText;
 
     return Container(

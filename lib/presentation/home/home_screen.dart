@@ -1,3 +1,4 @@
+import 'package:bevert/core/components/toast_widget.dart';
 import 'package:bevert/core/constants/app_asset.dart';
 import 'package:bevert/core/constants/constants.dart';
 import 'package:bevert/core/routes/router.dart';
@@ -44,9 +45,7 @@ class HomeScreen extends StatelessWidget {
             icon: const Icon(Icons.info_rounded),
             tooltip: '설정',
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('기능을 준비중입니다 :)')),
-              );
+              ToastHelper.showInfo("기능을 준비중입니다");
             },
           ),
         ],
@@ -93,6 +92,13 @@ class HomeScreen extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.tonality),
               title: Text('테마 설정', style: theme.textTheme.bodyLarge),
+              onTap: () {
+                context.push(AppRouter.theme.path);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.mic),
+              title: Text('녹음 정확도', style: theme.textTheme.bodyLarge),
               onTap: () {
                 context.push(AppRouter.theme.path);
               },

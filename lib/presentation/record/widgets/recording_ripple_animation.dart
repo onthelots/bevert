@@ -51,8 +51,8 @@ class _MultiRippleAnimationState extends State<MultiRippleAnimation>
           builder: (context, child) {
             double progress = (_controller.value + delay) % 1.0;
             double rippleSize =
-                widget.size + 40 * widget.amplitude * progress; // 물결 확산
-            double opacity = (1 - progress) * 0.3 * widget.amplitude; // 투명도 감소
+                widget.size + 60 * widget.amplitude * progress; // 40 -> 60
+            double opacity = (1 - progress) * 0.6 * widget.amplitude; // 0.3 -> 0.6
 
             return Container(
               width: rippleSize,
