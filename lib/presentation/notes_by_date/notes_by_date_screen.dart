@@ -133,52 +133,61 @@ class _NotesByDateScreenState extends State<NotesByDateScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                TableCalendar<TranscriptRecord>(
-                  locale: 'ko_KR',
-                  focusedDay: _focusedDay,
-                  firstDay: DateTime.utc(2020, 1, 1),
-                  lastDay: DateTime.utc(2030, 12, 31),
-                  headerStyle: HeaderStyle(
-                    formatButtonVisible: false,
-                    titleCentered: true,
-                    leftChevronVisible: false,
-                    rightChevronVisible: false,
-                    titleTextStyle: const TextStyle(fontSize: 0),
+
+                // 캘린더
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                  child: TableCalendar<TranscriptRecord>(
+                    locale: 'ko_KR',
+                    focusedDay: _focusedDay,
+                    firstDay: DateTime.utc(2020, 1, 1),
+                    lastDay: DateTime.utc(2030, 12, 31),
+                    headerStyle: HeaderStyle(
+                      formatButtonVisible: false,
+                      titleCentered: true,
+                      leftChevronVisible: false,
+                      rightChevronVisible: false,
+                      titleTextStyle: const TextStyle(fontSize: 0),
+                    ),
+                    calendarStyle: CalendarStyle(
+                      // Marker for events
+                      markerDecoration: BoxDecoration(
+                        color: theme.focusColor,
+                        shape: BoxShape.circle,
+                      ),
+                      // Today's date style
+                      todayDecoration: BoxDecoration(
+                        color: theme.colorScheme.secondary.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      todayTextStyle: TextStyle(color: theme.colorScheme.onSecondary),
+                      // Selected date style
+                      selectedDecoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withOpacity(0.8),
+                        shape: BoxShape.circle,
+                      ),
+                      selectedTextStyle: TextStyle(color: theme.colorScheme.onPrimary),
+                    ),
+                    selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                    eventLoader: _getEventsForDay,
+                    onDaySelected: _onDaySelected,
+                    onPageChanged: (focusedDay) {
+                      setState(() {
+                        _focusedDay = focusedDay;
+                      });
+                    },
                   ),
-                  calendarStyle: CalendarStyle(
-                    // Marker for events
-                    markerDecoration: BoxDecoration(
-                      color: theme.focusColor,
-                      shape: BoxShape.circle,
-                    ),
-                    // Today's date style
-                    todayDecoration: BoxDecoration(
-                      color: theme.colorScheme.secondary.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    todayTextStyle: TextStyle(color: theme.colorScheme.onSecondary),
-                    // Selected date style
-                    selectedDecoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.8),
-                      shape: BoxShape.circle,
-                    ),
-                    selectedTextStyle: TextStyle(color: theme.colorScheme.onPrimary),
-                  ),
-                  selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                  eventLoader: _getEventsForDay,
-                  onDaySelected: _onDaySelected,
-                  onPageChanged: (focusedDay) {
-                    setState(() {
-                      _focusedDay = focusedDay;
-                    });
-                  },
                 ),
                 const SizedBox(height: 8.0),
+
+                // 디바이더
                 Divider(
                   height: 20.0,
                   thickness: 10.0,
                   color: theme.dividerColor,
                 ),
+
+                // 노트 영역
                 Expanded(
                   child: _selectedEvents.isEmpty
                       ? const Center(
@@ -189,7 +198,7 @@ class _NotesByDateScreenState extends State<NotesByDateScreen> {
                           itemBuilder: (context, index) {
                             final record = _selectedEvents[index];
                             return Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                              margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 5.0),
                               decoration: BoxDecoration(
                                 border: Border.all(color: theme.dividerColor),
                                 borderRadius: BorderRadius.circular(12.0),
@@ -201,7 +210,7 @@ class _NotesByDateScreenState extends State<NotesByDateScreen> {
                                   style: theme.textTheme.bodySmall,
                                 ),
                                 onTap: () {
-                                  context.push(AppRouter.summary.path, extra: (record, false));
+                                  context.push(AppRouter.summary.path, extra: record);
                                 },
                               ),
                             );

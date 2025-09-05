@@ -34,22 +34,34 @@ serve(async (req) => {
     if (fetchError) throw fetchError;
 
     // 3. Gemini API에 보낼 프롬프트 구성
-    const contextLine = meetingContext ? `"${meetingContext}"` : '스크립트 전체 내용 요약';
+    const now = new Date();
+    // KST is UTC+9
+    const kstOffset = 9 * 60 * 60 * 1000;
+    const kstDate = new Date(now.getTime() + kstOffset);
+    const kstTimeString = kstDate.toISOString().slice(0, 19).replace('T', ' ').substring(0, 16);
+
+    const contextLine = meetingContext ? `${meetingContext}` : '스크립트 전체 내용 요약';
     const prompt = `
-      스크립트를 읽고, 아래 형식에 맞춰 회의록을 생성해줘.
-      ---
-      1. **개요**
-         - **회의주제:** ${contextLine}
-         - **일시:**
-         - **참석자:**
-         - **장소:**
-      2. **요약**
-         - **주요 안건:** (논의된 핵심 안건을 번호 목록으로 요약)
-      3. **주요 내용**
-         - (각 주요 안건에 대한 상세 논의 내용을 서술)
-      ---
-      **스크립트:**
-      ${record.transcript}
+당신은 회의록을 작성하는 유용한 어시스턴트입니다.
+제공된 스크립트를 바탕으로 한국어로 회의 요약을 작성해주세요.
+아래 형식을 정확히 따라주세요.
+
+**[회의록]**
+
+**1. 개요**
+- **회의주제:** ${contextLine}
+- **회의시간:** ${kstTimeString}
+
+**2. 요약**
+- **주요 안건:**
+  - (논의된 핵심 안건을 번호나 글머리 기호로 요약)
+
+**3. 주요 내용**
+- (각 주요 안건에 대한 상세 논의 내용을 서술)
+
+---
+**[원본 스크립트]**
+${record.transcript}
     `;
 
     // 4. Gemini API 호출

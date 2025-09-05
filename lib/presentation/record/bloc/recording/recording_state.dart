@@ -11,7 +11,6 @@ class RecordingState {
   final RecordingStatus status;
   final int duration; // 초 단위 녹음 시간
   final List<String> segments; // 실시간 단어/청크 결과
-  final String finalTranscript; // 녹음 종료 후 문장 단위 결과
   final String title; // 회의 타이틀
   final String meetingContext; // 회의 개요
   final double amplitude; // 화자
@@ -20,7 +19,6 @@ class RecordingState {
     this.status = RecordingStatus.idle,
     this.duration = 0,
     this.segments = const [],
-    this.finalTranscript = "",
     this.title = "",
     this.meetingContext = "",
     this.amplitude = 0.0,
@@ -39,7 +37,6 @@ class RecordingState {
       status: status ?? this.status,
       duration: duration ?? this.duration,
       segments: segments ?? this.segments,
-      finalTranscript: finalTranscript ?? this.finalTranscript,
       title: title ?? this.title,
       meetingContext: meetingContext ?? this.meetingContext,
       amplitude: amplitude ?? this.amplitude,

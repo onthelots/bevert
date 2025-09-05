@@ -23,6 +23,7 @@ class WhisperDataSourceImpl implements WhisperDataSource {
     print("🔹 파일 이름: $filename");
     print("🔹 API Key 존재 여부: ${apiKey.isNotEmpty}");
 
+    // formData로 전송 (file : Wav, model)
     final formData = FormData.fromMap({
       'file': MultipartFile.fromBytes(audioData, filename: filename),
       'model': 'whisper-1',
@@ -35,11 +36,8 @@ class WhisperDataSourceImpl implements WhisperDataSource {
         options: Options(
           headers: {
             'Authorization': 'Bearer $apiKey',
-            // multipart/form-data는 FormData 사용 시 자동 지정됨
-            //'Content-Type': 'multipart/form-data',
           },
           validateStatus: (status) {
-            // 200번대뿐만 아니라 모든 상태코드 확인
             return true;
           },
         ),
