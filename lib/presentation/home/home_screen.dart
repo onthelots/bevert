@@ -96,6 +96,13 @@ class HomeScreen extends StatelessWidget {
                 context.push(AppRouter.theme.path);
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.mic),
+              title: Text('녹음 정확도', style: theme.textTheme.bodyLarge),
+              onTap: () {
+                context.push(AppRouter.theme.path);
+              },
+            ),
           ],
         ),
       ),

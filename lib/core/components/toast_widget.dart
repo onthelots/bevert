@@ -26,7 +26,7 @@ class ToastHelper {
       alignment: Alignment.bottomCenter,
       showIcon: true,
       icon: const Icon(Icons.error_outline, color: Colors.white),
-      backgroundColor: AppColors.darkPrimary,
+      backgroundColor: Colors.red,
       foregroundColor: Colors.white,
       borderRadius: BorderRadius.circular(12),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

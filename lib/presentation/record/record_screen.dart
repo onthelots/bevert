@@ -12,6 +12,7 @@ import 'package:bevert/presentation/record/bloc/recording/recording_state.dart';
 import 'package:bevert/presentation/record/widgets/completed_recording_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart' show Uuid;
 import 'widgets/exit_recording_dialog.dart';
@@ -42,7 +43,8 @@ class _RecordScreenView extends StatefulWidget {
   State<_RecordScreenView> createState() => _RecordScreenViewState();
 }
 
-class _RecordScreenViewState extends State<_RecordScreenView>    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+class _RecordScreenViewState extends State<_RecordScreenView>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   bool _hasShownMeetingInfo = false;
   late final AnimationController _animationController;
   late final Animation<Offset> _animation;
@@ -56,13 +58,13 @@ class _RecordScreenViewState extends State<_RecordScreenView>    with WidgetsBin
       duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
 
-    _animation = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(0, -0.4),
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _animation = Tween<Offset>(begin: Offset.zero, end: const Offset(0, -0.4))
+        .animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeInOut,
+          ),
+        );
   }
 
   @override
@@ -120,10 +122,13 @@ class _RecordScreenViewState extends State<_RecordScreenView>    with WidgetsBin
   }
 
   /// 스크립트 저장 로직
-  Future<void> _onFinishAndSave(BuildContext context, RecordingState state) async {
+  Future<void> _onFinishAndSave(
+    BuildContext context,
+    RecordingState state,
+  ) async {
     context.read<RecordingBloc>().add(StopRecording());
 
-    final fullTranscript = state.segments.join(' ').trim();
+    final fullTranscript = state.segments.join('\n\n').trim();
     if (fullTranscript.isEmpty) {
       context.pop();
       return;
@@ -137,9 +142,11 @@ class _RecordScreenViewState extends State<_RecordScreenView>    with WidgetsBin
       title: state.title.isEmpty ? fallbackTitle : state.title,
       folderName: widget.folderName,
       transcript: fullTranscript,
-      summary: "", // 요약 전이므로 비워둡니다.
+      summary: "",
+      // 요약 전이므로 비워둡니다.
       createdAt: DateTime.now().toUtc(),
-      status: SummaryStatus.none, // '요약 전(none)' 상태로 설정
+      status: SummaryStatus.none,
+      // '요약 전(none)' 상태로 설정
       meetingContext: state.meetingContext, // meetingContext 추가
     );
 
@@ -152,14 +159,14 @@ class _RecordScreenViewState extends State<_RecordScreenView>    with WidgetsBin
 
     final status = context.watch<RecordingBloc>().state.status;
     final bool showLoadingIndicator =
-        status == RecordingStatus.initializing || status == RecordingStatus.resuming;
+        status == RecordingStatus.initializing ||
+        status == RecordingStatus.resuming;
 
     return BlocBuilder<RecordingBloc, RecordingState>(
       builder: (context, state) {
         final displayTranscript = state.segments.join('\n');
 
         return BlocListener<TranscriptBloc, TranscriptState>(
-
           // 번역 완료 시, Listener를 통해 요약 화면으로 이동
           listenWhen: (previous, current) => current is TranscriptSaved,
           listener: (context, state) {
@@ -168,14 +175,13 @@ class _RecordScreenViewState extends State<_RecordScreenView>    with WidgetsBin
             showDialog(
               context: context,
               barrierDismissible: false, // 배경 터치로 닫힘 방지
-              builder: (dialogContext) =>
-                  CompletedRecordingDialog(
-                    folderName: saved.transcript.folderName,
-                    onConfirm: () {
-                      print("종료");
-                      context.pop();
-                    },
-                  ),
+              builder: (dialogContext) => CompletedRecordingDialog(
+                folderName: saved.transcript.folderName,
+                onConfirm: () {
+                  print("종료");
+                  context.pop();
+                },
+              ),
             );
           },
           child: PopScope(
@@ -190,13 +196,12 @@ class _RecordScreenViewState extends State<_RecordScreenView>    with WidgetsBin
                 bloc.add(PauseRecording());
                 showDialog(
                   context: context,
-                  builder: (dialogContext) =>
-                      ExitRecordingDialog(
-                        onConfirm: () {
-                          bloc.add(StopRecording());
-                          context.pop();
-                        },
-                      ),
+                  builder: (dialogContext) => ExitRecordingDialog(
+                    onConfirm: () {
+                      bloc.add(StopRecording());
+                      context.pop();
+                    },
+                  ),
                 );
               }
             },
@@ -204,8 +209,15 @@ class _RecordScreenViewState extends State<_RecordScreenView>    with WidgetsBin
               appBar: AppBar(
                 title: Column(
                   children: [
-                    Text( (state.title == "") ? "노트 생성" : state.title, style: theme.textTheme.bodyLarge), // Corrected: "" instead of ""
-                    Text(formatDuration(state.duration), style: theme.textTheme.labelSmall),
+                    Text(
+                      (state.title == "") ? "노트 생성" : state.title,
+                      style: theme.textTheme.bodyLarge,
+                    ),
+                    // Corrected: "" instead of ""
+                    Text(
+                      formatDuration(state.duration),
+                      style: theme.textTheme.labelSmall,
+                    ),
                   ],
                 ),
               ),
@@ -213,21 +225,20 @@ class _RecordScreenViewState extends State<_RecordScreenView>    with WidgetsBin
                 alignment: Alignment.center,
                 children: [
                   // 녹음 내용 표시
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 150),
-                    child: ListView.builder(
-                            padding: const EdgeInsets.all(16.0),
-                            itemCount: state.segments.length,
-                            itemBuilder: (context, index) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                child: Text(
-                                  state.segments[index],
-                                  style: theme.textTheme.bodySmall,
-                                ),
-                              );
-                            },
-                          ),
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 150,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16.0),
+                      child: MarkdownBody(
+                        data: state.segments.join('\n\n'),
+                        styleSheet: MarkdownStyleSheet(
+                          p: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                    ),
                   ),
 
                   // "녹음을 시작해주세요" 애니메이션
@@ -242,11 +253,15 @@ class _RecordScreenViewState extends State<_RecordScreenView>    with WidgetsBin
                           children: [
                             Text(
                               '녹음버튼을 눌러 시작해주세요',
-                              style: theme.textTheme.bodyMedium
-                                  ?.copyWith(color: theme.primaryColor),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.primaryColor,
+                              ),
                             ),
-                            Icon(Icons.arrow_downward,
-                                size: 20, color: theme.primaryColor),
+                            Icon(
+                              Icons.arrow_downward,
+                              size: 20,
+                              color: theme.primaryColor,
+                            ),
                           ],
                         ),
                       ),
@@ -259,9 +274,13 @@ class _RecordScreenViewState extends State<_RecordScreenView>    with WidgetsBin
                     bottom: 0,
                     child: Container(
                       height: 150,
-                      padding: const EdgeInsets.only(bottom: 16.0, right: 16.0, left: 16.0),
+                      padding: const EdgeInsets.only(
+                        bottom: 16.0,
+                        right: 16.0,
+                        left: 16.0,
+                      ),
                       color: theme.scaffoldBackgroundColor,
-                      child: RecordingControlBar(
+                        child: RecordingControlBar(
                         onMicTap: () {
                           final bloc = context.read<RecordingBloc>();
                           switch (state.status) {
@@ -288,11 +307,8 @@ class _RecordScreenViewState extends State<_RecordScreenView>    with WidgetsBin
                   ),
 
                   if (showLoadingIndicator)
-
                     // 중앙 오버레이
-                    const Center(
-                      child: LoadingOverlay(),
-                    ),
+                    const Center(child: LoadingOverlay()),
                 ],
               ),
             ),

@@ -6,16 +6,17 @@ import 'package:bevert/presentation/record/bloc/recording/recording_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:record/record.dart';
 import 'package:vad/vad.dart';
 
 class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
-  final TranscribeAudioUseCase transcribeAudioUseCase;
+  final TranscribeAudioUseCase transcribeAudioUseCase; // STT UseCase
 
-  Timer? _timer;
-  Timer? _chunkTimer;
-  final List<int> _chunkBuffer = [];
+  Timer? _timer; // 일반 타이머
+  Timer? _chunkTimer; // 청크 타이머
+  final List<int> _chunkBuffer = []; // 청크 버퍼 (transcript)
   VadHandlerBase? _vadHandler;
-  final double _speechThreshold = 0.5; // 잡음 제거 위해 높임
+  final double _speechPositiveThreshold = 0.5; // 낮아질 수록, 잡음 및 간투어를 인식할 가능성이 높음
   final Duration _chunkInterval = const Duration(seconds: 10); // 청크 간격 조정
 
   RecordingBloc({required this.transcribeAudioUseCase}) : super(RecordingState()) {
@@ -41,12 +42,12 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
 
   /// VAD Setup (listen을 통해 _chunkBuffer에 음성을 할당함)
   void _setupVadHandler(Emitter<RecordingState> emit) {
-    _vadHandler!.onFrameProcessed.listen((frame) {
+    _vadHandler!.onFrameProcessed.listen((frameData) {
 
-      // 음성(frame)의 인식 정도를 높임 (_speechThreshold의 수치를 임의로 0.5로 설정, 이보다 높아야 _chunk에 할당)
-      if (frame.isSpeech > _speechThreshold) {
-        _chunkBuffer.addAll(frame.frame.map((e) => (e * 32767).toInt()));
-        add(UpdateAmplitude(frame.isSpeech)); // Speech animation
+      // 음성인식 (0.5 이상, 긍정적)
+      if (frameData.isSpeech > _speechPositiveThreshold) {
+        _chunkBuffer.addAll(frameData.frame.map((e) => (e * 32767).toInt()));
+        add(UpdateAmplitude(frameData.isSpeech)); // Speech animation
       }
     });
 

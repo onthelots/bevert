@@ -23,7 +23,17 @@ class SummaryScreen extends StatelessWidget {
     required this.transcriptRecord,
   });
 
-  // Tab1. AI 요약 화면
+  /// summary 마크다운 형식 삭제
+  String _stripMarkdown(String text) {
+    // Remove ** and __ for bold
+    text = text.replaceAll('**', '');
+    text = text.replaceAll('__', '');
+    // Remove #, ##, ### for headers
+    text = text.replaceAll(RegExp(r'^#+\s*', multiLine: true), '');
+    return text;
+  }
+
+  /// Tab1. AI 요약 화면
   Widget _buildSummaryContent(BuildContext context, ThemeData theme, TranscriptRecord record) {
 
     // 요약 진행 중일 경우
@@ -151,12 +161,68 @@ class SummaryScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.share),
-                    tooltip: '공유',
-                    onPressed: () {
-                      // 공유 로직 추가 가능
-                    },
+                  Builder(
+                    builder: (context) {
+                      return IconButton(
+                        icon: const Icon(Icons.share),
+                        tooltip: '공유',
+                        onPressed: () async {
+                          final tabController = DefaultTabController.of(context);
+                          if (tabController == null) return;
+
+                          // Get the latest state from the BLoC
+                          final blocState = context.read<TranscriptBloc>().state;
+                          TranscriptRecord? latestRecord;
+
+                          if (blocState is TranscriptLoaded) {
+                            try {
+                              latestRecord = blocState.transcripts.firstWhere((r) => r.id == transcriptRecord.id);
+                            } catch (e) {
+                              // Record not found in state, fallback to initial record
+                              latestRecord = transcriptRecord;
+                            }
+                          } else {
+                            // State is not loaded, fallback to initial record
+                            latestRecord = transcriptRecord;
+                          }
+                          
+                          if (latestRecord == null) return; // Should not happen
+
+                          final pdfService = PdfService();
+                          String? filePath;
+
+                          if (tabController.index == 0) { // Tab 1: AI Summary
+                            if (latestRecord.summary.isNotEmpty) {
+                              final plainTextSummary = _stripMarkdown(latestRecord.summary);
+                              filePath = await pdfService.createPdf(
+                                latestRecord.title,
+                                summary: plainTextSummary,
+                              );
+                            } else {
+                              ToastHelper.showError("AI 요약이 생성되지 않았습니다.");
+                              return;
+                            }
+                          } else { // Tab 2: Full Transcript
+                            final plainTextTranscript = _stripMarkdown(latestRecord.transcript);
+                            filePath = await pdfService.createPdf(
+                              latestRecord.title,
+                              fullTranscript: plainTextTranscript,
+                            );
+                          }
+
+                          if (filePath != null) {
+                            final sanitizedTitle = latestRecord.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+                            await SharePlus.instance.share(
+                              ShareParams(
+                                files: [XFile(filePath, name: '$sanitizedTitle.pdf')],
+                                text: '회의록: ${latestRecord.title}',
+                                subject: latestRecord.title,
+                              ),
+                            );
+                          }
+                        },
+                      );
+                    }
                   ),
                 ],
           bottom: TabBar(
@@ -203,9 +269,11 @@ class SummaryScreen extends StatelessWidget {
               child: SingleChildScrollView(
                 child: Container(
                   padding: const EdgeInsets.all(12.0),
-                  child: Text(
-                    transcriptRecord.transcript,
-                    style: const TextStyle(fontSize: 16, color: Colors.white70),
+                  child: MarkdownBody(
+                    data: transcriptRecord.transcript,
+                    styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                      p: const TextStyle(fontSize: 16, color: Colors.white70),
+                    ),
                   ),
                 ),
               ),
