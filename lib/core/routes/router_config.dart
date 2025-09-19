@@ -5,7 +5,7 @@ import 'package:bevert/presentation/home/folder_detail_screen.dart';
 import 'package:bevert/presentation/home/home_screen.dart';
 import 'package:bevert/presentation/notes_by_date/notes_by_date_screen.dart';
 import 'package:bevert/presentation/record/record_screen.dart';
-import 'package:bevert/presentation/settings/language_screen.dart';
+import 'package:bevert/presentation/settings/accurate_screen.dart';
 import 'package:bevert/presentation/settings/theme_screen.dart';
 import 'package:bevert/presentation/splash/splash_screen.dart';
 import 'package:bevert/presentation/summary/summary_screen.dart';
@@ -80,11 +80,11 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const ThemeScreen(),
     ),
 
-    // 언어 설정
+    // 정확도 설정
     GoRoute(
-      path: AppRouter.language.path,
-      name: AppRouter.language.name,
-      builder: (context, state) => const LanguageScreen(),
+      path: AppRouter.accurate.path,
+      name: AppRouter.accurate.name,
+      builder: (context, state) => const AccurateScreen(),
     ),
   ],
 );

@@ -100,7 +100,7 @@ class HomeScreen extends StatelessWidget {
               leading: const Icon(Icons.mic),
               title: Text('녹음 정확도', style: theme.textTheme.bodyLarge),
               onTap: () {
-                context.push(AppRouter.theme.path);
+                context.push(AppRouter.accurate.path);
               },
             ),
           ],

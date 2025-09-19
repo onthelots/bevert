@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'package:bevert/core/services/settings_service.dart';
 import 'package:bevert/domain/usecases/stt_remote/transcribe_audio_usecase.dart';
 import 'package:bevert/presentation/record/bloc/recording/recording_event.dart';
 import 'package:bevert/presentation/record/bloc/recording/recording_state.dart';
@@ -11,15 +12,18 @@ import 'package:vad/vad.dart';
 
 class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
   final TranscribeAudioUseCase transcribeAudioUseCase; // STT UseCase
+  final SettingsService _settingsService;
 
   Timer? _timer; // 일반 타이머
   Timer? _chunkTimer; // 청크 타이머
   final List<int> _chunkBuffer = []; // 청크 버퍼 (transcript)
   VadHandlerBase? _vadHandler;
-  final double _speechPositiveThreshold = 0.5; // 낮아질 수록, 잡음 및 간투어를 인식할 가능성이 높음
+  double _speechPositiveThreshold = 0.5; // 낮아질 수록, 잡음 및 간투어를 인식할 가능성이 높음
   final Duration _chunkInterval = const Duration(seconds: 10); // 청크 간격 조정
 
-  RecordingBloc({required this.transcribeAudioUseCase}) : super(RecordingState()) {
+  RecordingBloc({required this.transcribeAudioUseCase, required SettingsService settingsService})
+      : _settingsService = settingsService,
+        super(RecordingState()) {
     on<UpdateMeetingInfo>(_onUpdateMeetingInfo);
     on<StartRecording>(_onStartRecording);
     on<PauseRecording>(_onPauseRecording);
@@ -33,6 +37,12 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     on<SpeechError>((event, emit) {
       debugPrint("VAD Error: ${event.message}");
     });
+
+    _loadThreshold();
+  }
+
+  Future<void> _loadThreshold() async {
+    _speechPositiveThreshold = await _settingsService.getSpeechPositiveThreshold();
   }
 
   /// 회의 사전정보 입력 (optional)

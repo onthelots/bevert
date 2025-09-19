@@ -16,6 +16,7 @@ enum AppRouter {
   calendar(path: '/settings/calendar', name: 'calendar', subPath: 'calendar'),
 
   // Settings (Drawer 대상)
+  accurate(path: '/settings/accurate', name: 'accurate', subPath: 'accurate'),
   theme(path: '/settings/theme', name: 'theme', subPath: 'theme'),
   language(path: '/settings/language', name: 'language', subPath: 'language'),
   policy(path: '/settings/policy', name: 'policy', subPath: 'policy'),
